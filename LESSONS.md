@@ -29,3 +29,12 @@
 
 - Le téléchargement + exécution de PostgREST a été bloqué par le contrôle de sécurité. Solution retenue : écrire un petit serveur de test maison au lieu de contourner.
 - Date : 2026-11-10 | Statut : confirmée
+
+### Hostinger : Turbopack plante sur PostCSS (« node process exited … status: 0 »)
+
+- Contexte : Next.js 16.4.6, Tailwind 4 (`@tailwindcss/postcss`), build Hostinger (Node 22).
+- Symptôme : `TurbopackInternalError: globals.css … creating new process`. Le même build passe en local.
+- Cause : Turbopack lance PostCSS dans un sous-processus Node, que l'environnement de build de l'hébergeur ne permet pas (hypothèse sur la raison exacte).
+- Solution : `"build": "next build --webpack"` (doc Next 16 : opt-out de Turbopack).
+- À éviter : supposer qu'un build local réussi garantit celui de l'hébergeur ; toujours simuler une installation vierge en `NODE_ENV=production`.
+- Date : 2026-11-10 | Statut : correction testée en simulation, à confirmer sur Hostinger

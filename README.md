@@ -176,6 +176,8 @@ D'après la documentation Hostinger : **Next.js tourne sur les offres « Busines
 
 Simulation d'un serveur vierge : `npm ci` en mode production (sans dépendances de développement), puis `npm run build` **sans aucune variable d'environnement**, puis `npm start` — tout passe. Sans variables, le site répond « Configuration Supabase manquante » au lieu de planter ; avec elles, un visiteur non connecté est renvoyé vers `/connexion` sur toutes les pages privées. Les dépendances nécessaires au build (Tailwind, PostCSS, TypeScript) sont dans `dependencies`, et `.nvmrc` indique Node 22.
 
+> **Si le build échoue chez Hostinger avec « Turbopack … node process exited »** : c'est le sous-processus PostCSS de Turbopack qui ne démarre pas sur leur serveur. Le script `build` utilise donc `next build --webpack` (compilateur classique), vérifié sur une installation vierge avec 768 Mo de mémoire.
+
 ### Option A — Hostinger Business ou Cloud (application Node.js)
 
 1. **Dépôt** : le code est sur GitHub (`Arvy10/forge-afri-k`). Tu peux aussi envoyer un ZIP.
