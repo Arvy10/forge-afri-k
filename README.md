@@ -172,6 +172,10 @@ D'après la documentation Hostinger : **Next.js tourne sur les offres « Busines
 
 > Je n'ai pas pu tester le déploiement sur un compte Hostinger réel : les noms exacts des menus hPanel peuvent avoir changé. Les paramètres à saisir (Node 22, `npm run build`, `npm start`, variables) restent les mêmes.
 
+### Ce qui a été vérifié pour l'hébergement
+
+Simulation d'un serveur vierge : `npm ci` en mode production (sans dépendances de développement), puis `npm run build` **sans aucune variable d'environnement**, puis `npm start` — tout passe. Sans variables, le site répond « Configuration Supabase manquante » au lieu de planter ; avec elles, un visiteur non connecté est renvoyé vers `/connexion` sur toutes les pages privées. Les dépendances nécessaires au build (Tailwind, PostCSS, TypeScript) sont dans `dependencies`, et `.nvmrc` indique Node 22.
+
 ### Option A — Hostinger Business ou Cloud (application Node.js)
 
 1. **Dépôt** : le code est sur GitHub (`Arvy10/forge-afri-k`). Tu peux aussi envoyer un ZIP.
