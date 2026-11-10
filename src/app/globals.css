@@ -1,0 +1,265 @@
+@import "tailwindcss";
+
+/* =====================================================================
+   Jetons de couleur — « atelier » : vert profond, orange, crème.
+   Les neutres sont teintés de vert (jamais de gris pur).
+   Clair par défaut ; sombre via la préférence système ou l'interrupteur.
+   Un test (tests/contrast.test.ts) vérifie le contraste AA de ces paires.
+   ===================================================================== */
+:root {
+  color-scheme: light;
+  --canvas: #f6f1e4;
+  --surface: #fcf9f0;
+  --surface-2: #ece6d3;
+  --ink: #1b3409;
+  --ink-muted: #4a5c3a;
+  --line: #d9d2ba;
+  --line-strong: #82795a;
+  --forest: #1b3409;
+  --on-forest: #f6f1e4;
+
+  --accent: #e8620a; /* remplissages, pastilles, indicateurs */
+  --accent-strong: #a63e04; /* boutons pleins et texte orange */
+  --on-accent: #ffffff;
+  --accent-soft: #fbe0cb;
+  --focus: #a63e04;
+
+  --danger: #a3261a;
+  --danger-soft: #f8dcd7;
+  --success: #2f6b1a;
+
+  /* Types de contenu : fond doux / texte / pastille */
+  --t-impact-bg: #dcebc6;
+  --t-impact-fg: #2a5210;
+  --t-impact-dot: #4c8620;
+  --t-patrimoine-bg: #ecdfba;
+  --t-patrimoine-fg: #62491a;
+  --t-patrimoine-dot: #94742a;
+  --t-coulisses-bg: #d6dfe7;
+  --t-coulisses-fg: #2b4660;
+  --t-coulisses-dot: #6c8aa5;
+  --t-fun-bg: #fbe3a0;
+  --t-fun-fg: #6f4a00;
+  --t-fun-dot: #b27d00;
+  --t-appel_action-bg: #fad4ba;
+  --t-appel_action-fg: #85340a;
+  --t-appel_action-dot: #e8620a;
+
+  /* Statuts */
+  --s-a_faire: #6b7660;
+  --s-en_cours: #2f6a9f;
+  --s-pret_a_valider: #8a5a00;
+  --s-valide: #2f6b1a;
+  --s-publie: #1b3409;
+
+  --shadow: 0 1px 2px rgb(27 52 9 / 0.06), 0 4px 14px rgb(27 52 9 / 0.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --canvas: #0f1c08;
+    --surface: #17270e;
+    --surface-2: #203416;
+    --ink: #f1ecdd;
+    --ink-muted: #b0bda1;
+    --line: #2d4421;
+    --line-strong: #6f8f60;
+    --forest: #0a1405;
+    --on-forest: #f1ecdd;
+
+    --accent: #f27a2a;
+    --accent-strong: #f58a42;
+    --on-accent: #1b1004;
+    --accent-soft: #4a2208;
+    --focus: #f58a42;
+
+    --danger: #ff9b8f;
+    --danger-soft: #4a1b15;
+    --success: #9ad37f;
+
+    --t-impact-bg: #25391a;
+    --t-impact-fg: #c3e29a;
+    --t-impact-dot: #8cc55a;
+    --t-patrimoine-bg: #3a3118;
+    --t-patrimoine-fg: #ecd59a;
+    --t-patrimoine-dot: #cfae66;
+    --t-coulisses-bg: #1f3040;
+    --t-coulisses-fg: #b9d1e6;
+    --t-coulisses-dot: #7f9fba;
+    --t-fun-bg: #433512;
+    --t-fun-fg: #f8d878;
+    --t-fun-dot: #eab62a;
+    --t-appel_action-bg: #4a2208;
+    --t-appel_action-fg: #ffc29a;
+    --t-appel_action-dot: #f27a2a;
+
+    --s-a_faire: #9aa68c;
+    --s-en_cours: #7cb4e6;
+    --s-pret_a_valider: #e6b84d;
+    --s-valide: #8ccf70;
+    --s-publie: #f1ecdd;
+
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 14px rgb(0 0 0 / 0.25);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --canvas: #0f1c08;
+  --surface: #17270e;
+  --surface-2: #203416;
+  --ink: #f1ecdd;
+  --ink-muted: #b0bda1;
+  --line: #2d4421;
+  --line-strong: #6f8f60;
+  --forest: #0a1405;
+  --on-forest: #f1ecdd;
+
+  --accent: #f27a2a;
+  --accent-strong: #f58a42;
+  --on-accent: #1b1004;
+  --accent-soft: #4a2208;
+  --focus: #f58a42;
+
+  --danger: #ff9b8f;
+  --danger-soft: #4a1b15;
+  --success: #9ad37f;
+
+  --t-impact-bg: #25391a;
+  --t-impact-fg: #c3e29a;
+  --t-impact-dot: #8cc55a;
+  --t-patrimoine-bg: #3a3118;
+  --t-patrimoine-fg: #ecd59a;
+  --t-patrimoine-dot: #cfae66;
+  --t-coulisses-bg: #1f3040;
+  --t-coulisses-fg: #b9d1e6;
+  --t-coulisses-dot: #7f9fba;
+  --t-fun-bg: #433512;
+  --t-fun-fg: #f8d878;
+  --t-fun-dot: #eab62a;
+  --t-appel_action-bg: #4a2208;
+  --t-appel_action-fg: #ffc29a;
+  --t-appel_action-dot: #f27a2a;
+
+  --s-a_faire: #9aa68c;
+  --s-en_cours: #7cb4e6;
+  --s-pret_a_valider: #e6b84d;
+  --s-valide: #8ccf70;
+  --s-publie: #f1ecdd;
+
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 14px rgb(0 0 0 / 0.25);
+}
+
+@theme inline {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display:
+    var(--font-space-grotesk), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-forest: var(--forest);
+  --color-on-forest: var(--on-forest);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-on-accent: var(--on-accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-success: var(--success);
+
+  --color-t-impact-bg: var(--t-impact-bg);
+  --color-t-impact-fg: var(--t-impact-fg);
+  --color-t-impact-dot: var(--t-impact-dot);
+  --color-t-patrimoine-bg: var(--t-patrimoine-bg);
+  --color-t-patrimoine-fg: var(--t-patrimoine-fg);
+  --color-t-patrimoine-dot: var(--t-patrimoine-dot);
+  --color-t-coulisses-bg: var(--t-coulisses-bg);
+  --color-t-coulisses-fg: var(--t-coulisses-fg);
+  --color-t-coulisses-dot: var(--t-coulisses-dot);
+  --color-t-fun-bg: var(--t-fun-bg);
+  --color-t-fun-fg: var(--t-fun-fg);
+  --color-t-fun-dot: var(--t-fun-dot);
+  --color-t-appel_action-bg: var(--t-appel_action-bg);
+  --color-t-appel_action-fg: var(--t-appel_action-fg);
+  --color-t-appel_action-dot: var(--t-appel_action-dot);
+
+  --shadow-card: var(--shadow);
+  --animate-gear: gear-spin 90s linear infinite;
+  --animate-shimmer: shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes gear-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes shimmer {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@layer base {
+  html {
+    background: var(--canvas);
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background: var(--canvas);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    line-height: 1.5;
+    min-height: 100dvh;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.015em;
+    line-height: 1.15;
+  }
+  :focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  ::selection {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+  button,
+  [role="button"],
+  summary {
+    cursor: pointer;
+  }
+}
+
+/* Mouvement réduit : plus aucune animation, plus de défilement doux. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Barre de défilement discrète pour les tableaux */
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
