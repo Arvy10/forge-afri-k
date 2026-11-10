@@ -145,9 +145,6 @@ export function formatWeekRange(mondayISO: ISODate): string {
   return `du ${left} au ${right}`;
 }
 
-export const formatWeekTitle = (mondayISO: ISODate) =>
-  `Semaine ${formatWeekRange(mondayISO)}`.replace("Semaine du", "Semaine du");
-
 /** « 08:00 » à partir de « 08:00:00 ». */
 export const formatTime = (time: string) => time.slice(0, 5);
 
@@ -158,4 +155,19 @@ export function formatCountdown(c: Countdown): string {
   if (c.days > 0 || c.hours > 0) parts.push(`${c.hours} h`);
   parts.push(`${String(c.minutes).padStart(2, "0")} min`);
   return parts.join(" ");
+}
+
+/** « 16 nov. à 08:00 » pour un horodatage (UTC) affiché à Brazzaville. */
+export function formatDateTime(timestamp: string): string {
+  return format(new TZDate(new Date(timestamp), TIMEZONE), "d MMM 'à' HH:mm", { locale: fr });
+}
+
+/** « il y a 2 heures » */
+export function formatRelative(timestamp: string, now: Date = new Date()): string {
+  const diffMin = Math.round((now.getTime() - new Date(timestamp).getTime()) / 60000);
+  if (diffMin < 1) return "à l'instant";
+  if (diffMin < 60) return `il y a ${diffMin} min`;
+  if (diffMin < 1440) return `il y a ${Math.floor(diffMin / 60)} h`;
+  if (diffMin < 1440 * 7) return `il y a ${Math.floor(diffMin / 1440)} j`;
+  return formatDateTime(timestamp);
 }
