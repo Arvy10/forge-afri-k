@@ -263,3 +263,25 @@
   scrollbar-width: thin;
   scrollbar-color: var(--line-strong) transparent;
 }
+
+/* Icônes de l'interrupteur de thème : l'une ou l'autre selon le thème effectif, sans JavaScript. */
+.theme-icon-sun {
+  display: none;
+}
+.theme-icon-moon {
+  display: inline;
+}
+:root[data-theme="dark"] .theme-icon-sun {
+  display: inline;
+}
+:root[data-theme="dark"] .theme-icon-moon {
+  display: none;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .theme-icon-sun {
+    display: inline;
+  }
+  :root:not([data-theme="light"]) .theme-icon-moon {
+    display: none;
+  }
+}

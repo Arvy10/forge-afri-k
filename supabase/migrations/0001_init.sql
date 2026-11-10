@@ -377,6 +377,11 @@ create policy profile_roles_select on public.profile_roles for select to authent
   using (public.is_active_member());
 create policy profile_roles_admin_write on public.profile_roles for all to authenticated
   using (public.is_admin()) with check (public.is_admin());
+-- Un rôle du pôle n'est pas un privilège : chacun peut déclarer les siens à l'arrivée.
+create policy profile_roles_self_insert on public.profile_roles for insert to authenticated
+  with check (profile_id = (select auth.uid()) and public.is_active_member());
+create policy profile_roles_self_delete on public.profile_roles for delete to authenticated
+  using (profile_id = (select auth.uid()) and public.is_active_member());
 
 -- posts ---------------------------------------------------------------
 create policy posts_select on public.posts for select to authenticated using (public.is_active_member());

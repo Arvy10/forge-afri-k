@@ -286,6 +286,27 @@ describe.skipIf(!url)("RLS", () => {
     });
   });
 
+  it("rôles du pôle : chacun déclare les siens, pas ceux des autres", async () => {
+    await as(ALICE, async (c) => {
+      const role = (await c.query("select id from public.roles where slug='copywriter'")).rows[0]
+        .id;
+      expect(
+        (
+          await c.query("insert into public.profile_roles (profile_id, role_id) values ($1,$2)", [
+            ALICE,
+            role,
+          ])
+        ).rowCount,
+      ).toBe(1);
+      await expect(
+        c.query("insert into public.profile_roles (profile_id, role_id) values ($1,$2)", [
+          BOB,
+          role,
+        ]),
+      ).rejects.toThrow(/row-level security/);
+    });
+  });
+
   it("le numéro de post est automatique et croissant", async () => {
     const r = await db.query("select numero from public.posts order by numero");
     const nums = r.rows.map((x) => x.numero as number);
