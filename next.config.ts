@@ -5,8 +5,9 @@ const supabaseHost = process.env.NEXT_PUBLIC_SUPABASE_URL
   : undefined;
 
 const config: NextConfig = {
-  // Dossier autonome : se déploie sur un hébergement Node.js (Hostinger) ou un VPS.
-  output: "standalone",
+  // `NEXT_OUTPUT=standalone` produit un dossier autonome (.next/standalone) : utile pour un VPS minimal.
+  // Par défaut on garde `next start`, que les hébergements Node.js (Hostinger) savent lancer.
+  output: process.env.NEXT_OUTPUT === "standalone" ? "standalone" : undefined,
   poweredByHeader: false,
   reactStrictMode: true,
   experimental: {

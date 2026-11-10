@@ -15,7 +15,7 @@
 | Markdown (guide) | `react-markdown`                                                                                                                                  | Rendu sûr par défaut.                                                                      |
 | Tests            | Vitest : dates, rythme, CSV ; SQL RLS testé avec un script `pg` sur une base Postgres locale                                                      |                                                                                            |
 | Invitations      | `auth.admin.inviteUserByEmail` avec la clé `service_role`, uniquement dans une Server Action réservée à l'admin                                   | La clé ne touche jamais le navigateur.                                                     |
-| Hébergement      | `output: "standalone"`, Node 22. Hostinger **Business / Cloud** (application Node.js) ou **VPS**                                                  | Une offre « Premium » mutualisée classique ne fait pas tourner Next.js.                    |
+| Hébergement      | `next start` (Node 22) ; `NEXT_OUTPUT=standalone` possible. Hostinger **Business / Cloud** (application Node.js) ou **VPS**                       | Une offre « Premium » mutualisée classique ne fait pas tourner Next.js.                    |
 
 ## Schéma de données
 
