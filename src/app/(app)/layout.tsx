@@ -1,12 +1,17 @@
+import { DemoBanner } from "@/components/layout/DemoBanner";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { Sidebar } from "@/components/layout/Sidebar";
 import type { ShellUser } from "@/components/layout/UserCard";
 import { ACCESS_ROLE_LABEL } from "@/lib/constants";
 import { requireMember } from "@/lib/auth";
+import { cookies } from "next/headers";
+import { DEMO_COOKIE, isDemoMode } from "@/lib/demo/mode";
 import { getRoles, getTeam } from "@/lib/data";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const { profile, isAdmin } = await requireMember();
+  const demo = isDemoMode();
+  const demoVariant = (await cookies()).get(DEMO_COOKIE)?.value === "vide" ? "vide" : "exemples";
   const [team, roles] = await Promise.all([getTeam(), getRoles()]);
   const me = team.find((m) => m.id === profile.id);
   const myRoles = roles.filter((r) => me?.role_ids.includes(r.id)).map((r) => r.name);
@@ -30,6 +35,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       >
         Aller au contenu
       </a>
+      {demo && <DemoBanner variant={demoVariant} />}
       <Sidebar user={shellUser} />
       <main
         id="contenu"

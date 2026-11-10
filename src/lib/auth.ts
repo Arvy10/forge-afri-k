@@ -3,6 +3,7 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "./supabase/server";
 import { ActionError } from "./action";
+import { DEMO_MESSAGE, isDemoMode } from "./demo/mode";
 import type { ProfileRow } from "./database.types";
 
 /** Session courante (une seule lecture par requête). `user` est vérifié auprès de Supabase. */
@@ -41,6 +42,7 @@ export async function requireAdminPage() {
 
 /** Pour les Server Actions : lève une ActionError au lieu de rediriger. */
 export async function actionMember(options: { admin?: boolean; allowIncomplete?: boolean } = {}) {
+  if (isDemoMode()) throw new ActionError(DEMO_MESSAGE);
   const { supabase, user, profile } = await getAuth();
   if (!user || !profile || !profile.active)
     throw new ActionError("Ta session a expiré. Reconnecte-toi.");

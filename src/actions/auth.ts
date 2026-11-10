@@ -3,12 +3,14 @@
 import { redirect } from "next/navigation";
 import { ActionError, invalid, safeAction, type ActionResult } from "@/lib/action";
 import { actionMember, getAuth } from "@/lib/auth";
+import { DEMO_MESSAGE, isDemoMode } from "@/lib/demo/mode";
 import { publicEnv } from "@/lib/env";
 import { loginSchema, profileSchema, resetRequestSchema, setPasswordSchema } from "@/lib/schemas";
 import { safeNext } from "@/lib/safe-redirect";
 import { createClient } from "@/lib/supabase/server";
 
 export async function signIn(input: unknown, next?: string): Promise<ActionResult> {
+  if (isDemoMode()) return { ok: false, error: DEMO_MESSAGE };
   const result = await safeAction<undefined>(async () => {
     const parsed = loginSchema.safeParse(input);
     if (!parsed.success) return invalid(parsed.error);
@@ -31,6 +33,7 @@ export async function signOut() {
 }
 
 export async function requestPasswordReset(input: unknown): Promise<ActionResult> {
+  if (isDemoMode()) return { ok: false, error: DEMO_MESSAGE };
   return safeAction(async () => {
     const parsed = resetRequestSchema.safeParse(input);
     if (!parsed.success) return invalid(parsed.error);
@@ -44,6 +47,7 @@ export async function requestPasswordReset(input: unknown): Promise<ActionResult
 }
 
 export async function setPassword(input: unknown): Promise<ActionResult> {
+  if (isDemoMode()) return { ok: false, error: DEMO_MESSAGE };
   const result = await safeAction<undefined>(async () => {
     const parsed = setPasswordSchema.safeParse(input);
     if (!parsed.success) return invalid(parsed.error);

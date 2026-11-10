@@ -1,10 +1,41 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { DEMO_COOKIE, isDemoMode } from "./lib/demo/mode";
 
 /** Pages accessibles sans être connecté. Tout le reste est privé. */
 const PUBLIC_PATHS = ["/connexion", "/mot-de-passe-oublie", "/auth/confirm"];
 
+/** Pages de connexion : sans objet en aperçu visuel (pas de compte, pas de base). */
+const DEMO_SKIPPED = [
+  "/connexion",
+  "/mot-de-passe-oublie",
+  "/definir-mot-de-passe",
+  "/completer-profil",
+  "/auth/confirm",
+];
+
+/** Aperçu visuel : aucune connexion, aucune donnée réelle. S'éteint dès que Supabase est configuré. */
+function demoProxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const choice = request.nextUrl.searchParams.get("demo");
+  if (choice === "vide" || choice === "exemples") {
+    const to = request.nextUrl.clone();
+    to.searchParams.delete("demo");
+    const res = NextResponse.redirect(to);
+    res.cookies.set(DEMO_COOKIE, choice, { path: "/", maxAge: 60 * 60 * 24 * 30, sameSite: "lax" });
+    return res;
+  }
+  if (DEMO_SKIPPED.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+    const to = request.nextUrl.clone();
+    to.pathname = "/";
+    to.search = "";
+    return NextResponse.redirect(to);
+  }
+  return NextResponse.next();
+}
+
 export async function proxy(request: NextRequest) {
+  if (isDemoMode()) return demoProxy(request);
   let response = NextResponse.next({ request });
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

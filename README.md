@@ -7,6 +7,14 @@ Mobile d'abord, clair et sombre, accès réservé aux membres invités.
 
 ---
 
+## 0. Voir le site tout de suite (aperçu visuel)
+
+Tant que les clés Supabase ne sont **pas** renseignées, le site s'ouvre en **mode aperçu visuel** : pas de connexion, données d'exemple fictives, bandeau « Aperçu visuel » en haut, et **rien n'est enregistré** (toute modification affiche un message). Le bandeau permet de basculer entre « Avec des exemples » et « Vide (comme au départ) » pour voir les états vides.
+
+Il s'éteint **tout seul** dès que `NEXT_PUBLIC_SUPABASE_URL` et `NEXT_PUBLIC_SUPABASE_ANON_KEY` existent au moment du build : le site redevient privé, avec connexion obligatoire. Comme ces variables sont figées au build, il faut redéployer après les avoir ajoutées.
+
+---
+
 ## 1. Ce qu'il te faut
 
 | Élément                                                                              | Où                  |
