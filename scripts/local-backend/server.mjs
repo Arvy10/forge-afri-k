@@ -16,6 +16,7 @@ import pg from "pg";
 const PORT = Number(process.env.PORT ?? 54321);
 const SECRET = process.env.JWT_SECRET ?? "local-demo-secret-not-for-production-use";
 const PASSWORD = "motdepasse-demo";
+const SERVICE_KEY = "demo-service-role-key";
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 
 const b64 = (o) => Buffer.from(typeof o === "string" ? o : JSON.stringify(o)).toString("base64url");
@@ -174,8 +175,9 @@ const colsFrom = (url, pre = "") => {
 async function rest(req, res, url) {
   const table = url.pathname.replace("/rest/v1/", "");
   const auth = req.headers.authorization?.replace(/^Bearer /, "");
-  const claims = auth ? verify(auth) : null;
-  const role = claims ? "authenticated" : "anon";
+  const isService = auth === SERVICE_KEY; // clé service_role de démo : contourne la RLS
+  const claims = auth && !isService ? verify(auth) : null;
+  const role = isService ? "postgres" : claims ? "authenticated" : "anon";
   const wantObject = (req.headers.accept ?? "").includes("vnd.pgrst.object");
   const prefer = req.headers.prefer ?? "";
   const returning = prefer.includes("return=representation");
@@ -309,6 +311,16 @@ async function authRoute(req, res, url) {
       ? send(res, 200, userJson(rows[0]))
       : send(res, 401, { code: 401, msg: "user not found" });
   }
+  if (path === "/invite" && req.method === "POST") {
+    if (req.headers.authorization !== `Bearer ${SERVICE_KEY}` && req.headers.apikey !== SERVICE_KEY) return send(res, 401, { msg: "service_role requis" });
+    const body = JSON.parse((await readBody(req)) || "{}");
+    const { rows: existing } = await pool.query("select 1 from auth.users where lower(email) = lower($1)", [body.email]);
+    if (existing[0]) return send(res, 422, { code: 422, error_code: "email_exists", msg: "A user with this email address has already been registered" });
+    const { rows } = await pool.query("insert into auth.users (email, raw_user_meta_data) values ($1, $2) returning id, email, raw_user_meta_data", [body.email, body.data ?? {}]);
+    console.log(`[invite] ${body.email}`);
+    return send(res, 200, userJson(rows[0]));
+  }
+  if (path.startsWith("/admin/users/") && req.method === "PUT") return send(res, 200, {});
   if (path === "/logout") return send(res, 204);
   if (path === "/recover") return send(res, 200, {});
   return send(res, 404, { msg: `Non géré en local : ${path}` });
