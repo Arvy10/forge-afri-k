@@ -14,7 +14,7 @@ export function MemberCard({ member, roles }: { member: Member; roles: RoleRow[]
   const wa = waLink(member.whatsapp);
   const name = member.full_name || member.email;
   return (
-    <article className="bg-surface border-line shadow-card relative flex flex-col gap-3 rounded-2xl border p-4">
+    <article className="bg-surface border-line shadow-card lift relative flex flex-col gap-3 rounded-2xl border p-4">
       <div className="flex items-start gap-3">
         <Avatar name={name} src={member.avatar_url} id={member.id} size="lg" />
         <div className="min-w-0">

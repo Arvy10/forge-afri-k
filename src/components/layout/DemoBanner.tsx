@@ -21,7 +21,7 @@ export function DemoBanner({ variant }: { variant: DemoVariant }) {
   return (
     <div
       role="note"
-      className="bg-accent-soft text-ink border-accent/40 sticky top-0 z-20 border-b px-4 py-2 md:px-8"
+      className="bg-accent-soft text-ink border-accent/40 z-20 border-b px-4 py-2 md:sticky md:top-0 md:px-8"
     >
       <div className="mx-auto flex max-w-[88rem] flex-wrap items-center gap-x-4 gap-y-1">
         <p className="flex items-center gap-2 text-sm font-medium">

@@ -41,11 +41,11 @@ export default async function ProjectsPage() {
           description="Les projets de l'association apparaîtront ici (supabase/seed.sql charge la liste de départ)."
         />
       ) : (
-        <ul className="mb-10 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <ul className="stagger mb-10 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {list.map((p) => (
             <li
               key={p.id}
-              className="bg-surface border-line shadow-card flex flex-col gap-3 rounded-2xl border p-4 md:p-5"
+              className="bg-surface border-line shadow-card lift flex flex-col gap-3 rounded-2xl border p-4 md:p-5"
             >
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <span

@@ -85,7 +85,7 @@ export function WeekBoard({ days, posts, people, me, today, query, allowDrag = t
   return (
     <div>
       <Notice message={error} onClose={clearError} />
-      <div className="grid gap-4 md:grid-cols-5 md:gap-3">
+      <div className="stagger grid gap-4 md:grid-cols-5 md:gap-3">
         {days.map((date) => {
           const expected = defaultTypeForDate(date);
           const dayPosts = optimisticPosts.filter((p) => p.date === date);

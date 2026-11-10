@@ -37,13 +37,13 @@ export default async function RolesPage() {
           </span>
         </p>
       )}
-      <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <ul className="stagger grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {roles.map((r) => {
           const holders = active.filter((m) => m.role_ids.includes(r.id));
           return (
             <li
               key={r.id}
-              className="bg-surface border-line shadow-card flex flex-col gap-3 rounded-2xl border p-4"
+              className="bg-surface border-line shadow-card lift flex flex-col gap-3 rounded-2xl border p-4"
             >
               <div>
                 <h2 className="font-display text-lg font-bold">{r.name}</h2>

@@ -89,7 +89,7 @@ export default async function GuidePage() {
         )}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="stagger grid gap-4 lg:grid-cols-2">
         {others.map((s, i) => (
           <section
             key={s.id}

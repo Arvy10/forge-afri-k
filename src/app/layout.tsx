@@ -19,15 +19,13 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f6f1e4" },
-    { media: "(prefers-color-scheme: dark)", color: "#0f1c08" },
-  ],
+  themeColor: "#f6f1e4",
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const theme = (await cookies()).get("theme")?.value;
-  const dataTheme = theme === "light" || theme === "dark" ? theme : undefined;
+  // Clair par défaut : le sombre n'est actif que si la personne l'a choisi.
+  const dataTheme = theme === "dark" ? "dark" : "light";
   return (
     <html
       lang="fr"

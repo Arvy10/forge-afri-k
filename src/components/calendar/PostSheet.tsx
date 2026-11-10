@@ -32,10 +32,10 @@ export function PostSheet({ mode, defaults, detail, people, me, closeHref }: Pro
   return (
     <Dialog.Root open onOpenChange={(open) => !open && router.push(closeHref, { scroll: false })}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/45" />
+        <Dialog.Overlay className="rx-overlay fixed inset-0 z-40 bg-black/45" />
         <Dialog.Content
           aria-describedby={undefined}
-          className="bg-canvas md:border-line fixed inset-0 z-50 flex flex-col overflow-hidden md:left-auto md:w-[38rem] md:max-w-[90vw] md:border-l md:shadow-2xl"
+          className="rx-sheet bg-canvas md:border-line fixed inset-0 z-50 flex flex-col overflow-hidden md:left-auto md:w-[38rem] md:max-w-[90vw] md:border-l md:shadow-2xl"
         >
           <header className="border-line flex items-start justify-between gap-3 border-b px-4 py-3 md:px-6">
             <div className="min-w-0 space-y-1.5">

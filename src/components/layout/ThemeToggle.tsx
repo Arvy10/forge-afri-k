@@ -4,12 +4,10 @@ import { Moon, Sun } from "lucide-react";
 import { IconButton } from "@/components/ui/Button";
 
 function currentTheme(): "light" | "dark" {
-  const attr = document.documentElement.dataset.theme;
-  if (attr === "light" || attr === "dark") return attr;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
 }
 
-/** Interrupteur clair / sombre. Mémorisé dans un cookie pour éviter le flash au chargement. */
+/** Interrupteur clair / sombre. Clair par défaut ; le choix est mémorisé dans un cookie pour éviter le flash au chargement. */
 export function ThemeToggle({ className }: { className?: string }) {
   return (
     <IconButton

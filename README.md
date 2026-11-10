@@ -261,9 +261,15 @@ Mise à jour : `cd /var/www/forge-afrik && git pull && npm ci && npm run build &
 - [ ] Un visiteur non connecté est renvoyé vers la page de connexion.
 - [ ] Sauvegardes : activées dans Supabase (offre Pro) ou export régulier du calendrier en CSV.
 
+## Identité visuelle
+
+- **Logo** : fichiers dans `public/brand/` (`logo.webp`, `logo-pole.webp`, `mark.webp`), extraits du visuel fourni ; favicon dans `src/app/icon.png`. Pour le remplacer, garde les mêmes noms de fichiers.
+- **Thème** : le site est **clair par défaut**, quel que soit le réglage de l'appareil. Le mode sombre se choisit avec l'interrupteur (le choix est mémorisé).
+- **Animations** : apparition échelonnée des blocs, soulèvement des cartes au survol, panneaux qui glissent, engrenage qui tourne lentement (accueil), compte à rebours « en direct ». Elles sont toutes coupées si l'appareil demande de réduire les animations.
+
 ## 10. Limites connues
 
-- Le **logo** est un engrenage dessiné provisoirement (`src/components/ui/Logo.tsx`) : envoie-moi le fichier officiel (SVG/PNG) pour le remplacer et ajuster la palette.
+- Le logo vient d'une image JPEG fournie (fond retiré automatiquement) : si tu as le fichier d'origine en SVG ou PNG transparent, il sera plus net.
 - Les rappels « Me prévenir quand c'est prêt » enregistrent seulement l'intérêt (pas de notification).
 - Les jalons de la frise (Projets) se modifient en base ; les projets et le guide se modifient depuis le site.
 - Taille maximale d'une pièce jointe : 50 Mo (limite de l'offre gratuite Supabase).

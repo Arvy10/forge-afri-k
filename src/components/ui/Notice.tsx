@@ -24,7 +24,7 @@ export function Notice({
     <div
       role={tone === "error" ? "alert" : "status"}
       className={cn(
-        "mb-3 flex items-start justify-between gap-3 rounded-lg px-3 py-2.5 text-sm font-medium",
+        "notice-in mb-3 flex items-start justify-between gap-3 rounded-lg px-3 py-2.5 text-sm font-medium",
         tone === "error" ? "bg-danger-soft text-danger" : "bg-accent-soft text-ink",
       )}
     >

@@ -1,8 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { HeroBanner } from "@/components/home/HeroBanner";
+import {
+  CalendarClock,
+  ChevronLeft,
+  ChevronRight,
+  Flag,
+  ListChecks,
+  Radio,
+  Users,
+} from "lucide-react";
+import { HeroBanner, HeroStat } from "@/components/home/HeroBanner";
 import { MyTasks } from "@/components/home/MyTasks";
 import { NextPostCard } from "@/components/home/NextPostCard";
 import { PrepSoonList } from "@/components/home/PrepSoonList";
@@ -16,6 +24,7 @@ import { requireMember } from "@/lib/auth";
 import { getRoles, getTeam, toLite } from "@/lib/data";
 import {
   addDaysISO,
+  formatDayLong,
   formatWeekRange,
   isISODate,
   startOfWeekISO,
@@ -52,7 +61,15 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
 
   return (
     <>
-      <HeroBanner firstName={firstName} greeting={greeting()} />
+      <HeroBanner
+        firstName={firstName}
+        greeting={greeting()}
+        dateLabel={`${formatDayLong(today)} ${today.slice(0, 4)}`}
+      >
+        <Suspense fallback={null}>
+          <HeroStats today={today} monday={startOfWeekISO(today)} />
+        </Suspense>
+      </HeroBanner>
 
       {/* 2. Cette semaine */}
       <section aria-labelledby="cette-semaine" className="mb-6">
@@ -88,36 +105,101 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
         </Suspense>
       </section>
 
-      <div className="mb-6 grid gap-4 lg:grid-cols-3">
-        <Section title="Prochain post" id="prochain-post" href="/calendrier" hrefLabel="Calendrier">
+      <div className="stagger mb-6 grid gap-4 lg:grid-cols-3">
+        <Section
+          title="Prochain post"
+          icon={Radio}
+          id="prochain-post"
+          href="/calendrier"
+          hrefLabel="Calendrier"
+        >
           <Suspense fallback={<Skeleton className="h-64" />}>
             <NextPost today={today} />
           </Suspense>
         </Section>
-        <Section title="Mes tâches" id="mes-taches" href="/taches" hrefLabel="Toutes">
+        <Section
+          title="Mes tâches"
+          icon={ListChecks}
+          id="mes-taches"
+          href="/taches"
+          hrefLabel="Toutes"
+        >
           <Suspense fallback={<Skeleton className="h-48" />}>
             <MyOpenTasks today={today} />
           </Suspense>
         </Section>
-        <Section title="À préparer bientôt" id="a-preparer" className="border-accent/40">
+        <Section
+          title="À préparer bientôt"
+          icon={CalendarClock}
+          id="a-preparer"
+          className="border-accent/40"
+        >
           <Suspense fallback={<Skeleton className="h-48" />}>
             <PrepSoon today={today} />
           </Suspense>
         </Section>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-3">
-        <Section title="Membres du pôle" id="membres" href="/membres" className="xl:col-span-2">
+      <div className="stagger grid gap-4 xl:grid-cols-3">
+        <Section
+          title="Membres du pôle"
+          icon={Users}
+          id="membres"
+          href="/membres"
+          className="xl:col-span-2"
+        >
           <Suspense fallback={<Skeleton className="h-32" />}>
             <Team />
           </Suspense>
         </Section>
-        <Section title="Projets à venir" id="projets" href="/projets" hrefLabel="Projets">
+        <Section
+          title="Projets à venir"
+          icon={Flag}
+          id="projets"
+          href="/projets"
+          hrefLabel="Projets"
+        >
           <Suspense fallback={<Skeleton className="h-48" />}>
             <Upcoming />
           </Suspense>
         </Section>
       </div>
+    </>
+  );
+}
+
+/** Pastilles de chiffres du bandeau : l'essentiel en un coup d'œil. */
+async function HeroStats({ today, monday }: { today: string; monday: string }) {
+  const { supabase, profile } = await requireMember();
+  const tomorrow = addDaysISO(today, 1);
+  const [week, prep, tasks] = await Promise.all([
+    supabase
+      .from("posts")
+      .select("id, statut")
+      .gte("date", monday)
+      .lte("date", addDaysISO(monday, 6)),
+    supabase
+      .from("posts")
+      .select("id, prep_date, statut")
+      .lte("prep_date", tomorrow)
+      .gte("date", today)
+      .in("statut", ["a_faire", "en_cours", "pret_a_valider"]),
+    supabase.from("tasks").select("id").eq("responsable_id", profile.id).neq("statut", "valide"),
+  ]);
+  const posts = (week.data ?? []) as Pick<PostRow, "id" | "statut">[];
+  const published = posts.filter((p) => p.statut === "publie").length;
+  const prepCount = ((prep.data ?? []) as Pick<PostRow, "id" | "prep_date" | "statut">[]).filter(
+    (p) => p.statut === "a_faire" || (p.prep_date ?? "") >= today,
+  ).length;
+  return (
+    <>
+      <HeroStat
+        value={posts.length}
+        label={`posts cette semaine${published ? ` (${published} publié${published > 1 ? "s" : ""})` : ""}`}
+        href="/calendrier"
+      />
+      <HeroStat value={prepCount} label="à préparer d'ici demain" href="#a-preparer" urgent />
+      <HeroStat value={(tasks.data ?? []).length} label="tâches ouvertes pour toi" href="/taches" />
     </>
   );
 }

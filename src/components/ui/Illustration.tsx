@@ -27,7 +27,7 @@ export function Illustration({ kind, className }: { kind: IllustrationKind; clas
       strokeLinejoin="round"
       aria-hidden
       focusable="false"
-      className={cn("text-ink-muted h-28 w-auto", className)}
+      className={cn("text-ink-muted animate-float h-28 w-auto", className)}
     >
       <ellipse cx="80" cy="108" rx="52" ry="5" className="fill-surface-2 stroke-none" />
       {kind === "calendar" && (

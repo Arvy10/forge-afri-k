@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
-import { Logo } from "@/components/ui/Logo";
+import { LogoPlate } from "@/components/ui/Logo";
 import { NAV_ITEMS, isActivePath } from "@/lib/nav";
 import { cn } from "@/lib/cn";
 import { NavLinks } from "./NavLinks";
@@ -38,7 +38,9 @@ export function MobileNav({ user }: { user: ShellUser }) {
             >
               <Icon aria-hidden className="size-6" strokeWidth={active ? 2.4 : 1.9} />
               <span>{label.split(" ")[0]}</span>
-              {active && <span aria-hidden className="bg-accent -mt-0.5 h-0.5 w-6 rounded-full" />}
+              {active && (
+                <span aria-hidden className="title-bar bg-accent -mt-0.5 h-0.5 w-6 rounded-full" />
+              )}
             </Link>
           );
         })}
@@ -54,16 +56,16 @@ export function MobileNav({ user }: { user: ShellUser }) {
       </nav>
 
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/50 md:hidden" />
+        <Dialog.Overlay className="rx-overlay fixed inset-0 z-40 bg-black/50 md:hidden" />
         <Dialog.Content
           aria-describedby={undefined}
-          className="bg-forest text-on-forest fixed inset-y-0 left-0 z-50 flex w-[19rem] max-w-[88vw] flex-col px-3 pt-5 pb-[max(1rem,env(safe-area-inset-bottom))] md:hidden"
+          className="rx-drawer bg-forest text-on-forest fixed inset-y-0 left-0 z-50 flex w-[19rem] max-w-[88vw] flex-col px-3 pt-5 pb-[max(1rem,env(safe-area-inset-bottom))] md:hidden"
         >
           <div className="mb-4 flex items-start justify-between px-2">
             <div>
               <Dialog.Title asChild>
-                <span className="block">
-                  <Logo light />
+                <span className="block w-44">
+                  <LogoPlate />
                 </span>
               </Dialog.Title>
               <p className="text-on-forest/75 mt-2 text-xs">Pôle Communication &amp; Réseau</p>

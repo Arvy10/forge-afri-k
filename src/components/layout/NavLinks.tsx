@@ -18,7 +18,7 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
               onClick={onNavigate}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors",
+                "flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-all duration-200 hover:translate-x-0.5",
                 active
                   ? "bg-on-forest/12 text-on-forest border-accent border-l-4 pl-2"
                   : "text-on-forest/80 hover:bg-on-forest/8 hover:text-on-forest",

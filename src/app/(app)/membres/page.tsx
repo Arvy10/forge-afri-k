@@ -27,7 +27,7 @@ export default async function MembersPage() {
           description="Invite la première personne du pôle par e-mail."
         />
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <ul className="stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {visible.map((m) => (
             <li key={m.id} className="flex">
               <div className="flex w-full flex-col">

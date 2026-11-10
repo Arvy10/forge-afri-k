@@ -46,10 +46,10 @@ export function ProjectEditor({ project }: { project: ProjectRow }) {
         Modifier
       </Dialog.Trigger>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/50" />
+        <Dialog.Overlay className="rx-overlay fixed inset-0 z-40 bg-black/50" />
         <Dialog.Content
           aria-describedby={undefined}
-          className="bg-canvas fixed inset-x-0 bottom-0 z-50 max-h-[92dvh] overflow-y-auto rounded-t-2xl p-5 shadow-2xl md:inset-auto md:top-1/2 md:left-1/2 md:w-[36rem] md:max-w-[92vw] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl"
+          className="rx-dialog bg-canvas fixed inset-x-0 bottom-0 z-50 max-h-[92dvh] overflow-y-auto rounded-t-2xl p-5 shadow-2xl md:inset-auto md:top-1/2 md:left-1/2 md:w-[36rem] md:max-w-[92vw] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl"
         >
           <div className="mb-3 flex items-start justify-between gap-3">
             <Dialog.Title className="font-display text-xl font-bold">

@@ -50,7 +50,7 @@ export function PostCard({
       onDragStart={draggable ? (e) => onDragStart?.(e, post.id) : undefined}
       onDragEnd={draggable ? onDragEnd : undefined}
       className={cn(
-        "bg-surface border-line shadow-card relative flex flex-col gap-2.5 rounded-xl border border-t-4 p-3 transition-shadow hover:shadow-md",
+        "bg-surface border-line shadow-card lift relative flex flex-col gap-2.5 rounded-xl border border-t-4 p-3",
         TYPE_CLASSES[post.type].bar,
         late && "outline-accent outline-2 -outline-offset-1",
         dragging && "opacity-40",

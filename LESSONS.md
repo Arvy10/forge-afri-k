@@ -38,3 +38,10 @@
 - Solution : `"build": "next build --webpack"` (doc Next 16 : opt-out de Turbopack).
 - À éviter : supposer qu'un build local réussi garantit celui de l'hébergeur ; toujours simuler une installation vierge en `NODE_ENV=production`.
 - Date : 2026-11-10 | Statut : correction testée en simulation, à confirmer sur Hostinger
+
+### Tailwind 4 : `translate`/`scale` sont des propriétés CSS séparées
+
+- Symptôme attendu : une boîte centrée avec `-translate-x-1/2` double son décalage si un `@keyframes` anime `transform: translate(...)`.
+- Solution : animer `scale` / `opacity` seulement dans les keyframes des boîtes centrées.
+- Autre piège : une animation avec `fill-mode: both` laisse un `transform` qui piège les éléments `position: fixed` enfants ; utiliser `backwards` et finir à `transform: none`.
+- Date : 2026-11-10 | Statut : confirmée

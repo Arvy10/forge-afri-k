@@ -26,7 +26,6 @@ function block(opener: string): Record<string, string> {
 }
 
 const light = block(":root {");
-const darkMedia = block(':root:not([data-theme="light"]) {');
 const darkAttr = block(':root[data-theme="dark"] {');
 
 function lum(hex: string) {
@@ -45,12 +44,11 @@ const TYPES = ["impact", "patrimoine", "coulisses", "fun", "appel_action"];
 const STATUSES = ["a_faire", "en_cours", "pret_a_valider", "valide", "publie"];
 
 describe("thème sombre", () => {
-  it("le mode sombre système et l'interrupteur définissent les mêmes couleurs", () => {
-    expect(darkMedia).toEqual(darkAttr);
-    expect(Object.keys(darkAttr).length).toBeGreaterThan(30);
-  });
   it("définit les mêmes jetons que le mode clair (hors ombre)", () => {
     expect(Object.keys(darkAttr).sort()).toEqual(Object.keys(light).sort());
+  });
+  it("n'est jamais imposé par le réglage de l'appareil : le site reste clair par défaut", () => {
+    expect(css).not.toMatch(/prefers-color-scheme:\s*dark/);
   });
 });
 

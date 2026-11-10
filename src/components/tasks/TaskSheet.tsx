@@ -36,10 +36,10 @@ export function TaskSheet({
   return (
     <Dialog.Root open onOpenChange={(o) => !o && router.push(closeHref, { scroll: false })}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/45" />
+        <Dialog.Overlay className="rx-overlay fixed inset-0 z-40 bg-black/45" />
         <Dialog.Content
           aria-describedby={undefined}
-          className="bg-canvas md:border-line fixed inset-0 z-50 flex flex-col overflow-hidden md:left-auto md:w-[34rem] md:max-w-[90vw] md:border-l md:shadow-2xl"
+          className="rx-sheet bg-canvas md:border-line fixed inset-0 z-50 flex flex-col overflow-hidden md:left-auto md:w-[34rem] md:max-w-[90vw] md:border-l md:shadow-2xl"
         >
           <header className="border-line flex items-center justify-between gap-3 border-b px-4 py-3 md:px-6">
             <Dialog.Title className="font-display text-xl font-bold">

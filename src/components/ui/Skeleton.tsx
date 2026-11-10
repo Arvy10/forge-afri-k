@@ -1,8 +1,8 @@
 import { cn } from "@/lib/cn";
 
-/** Bloc gris pulsant pour les états de chargement. */
+/** Bloc de chargement avec un reflet qui traverse. */
 export function Skeleton({ className }: { className?: string }) {
-  return <div aria-hidden className={cn("bg-surface-2 animate-shimmer rounded-lg", className)} />;
+  return <div aria-hidden className={cn("bg-surface-2 skeleton rounded-lg", className)} />;
 }
 
 export function PageSkeleton({ rows = 3 }: { rows?: number }) {

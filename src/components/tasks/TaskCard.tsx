@@ -35,7 +35,7 @@ export function TaskCard({
   return (
     <article
       className={cn(
-        "bg-surface border-line shadow-card relative flex flex-col gap-2.5 rounded-xl border p-3",
+        "bg-surface border-line shadow-card lift relative flex flex-col gap-2.5 rounded-xl border p-3",
         late && "outline-accent outline-2 -outline-offset-1",
         task.statut === "valide" && "opacity-75",
       )}

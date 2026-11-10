@@ -4,10 +4,11 @@ import { cn } from "@/lib/cn";
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 
 const base =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold whitespace-nowrap transition-colors disabled:pointer-events-none disabled:opacity-50";
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold whitespace-nowrap transition-[background-color,filter,transform,box-shadow] duration-200 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-accent-strong text-on-accent hover:brightness-110 active:brightness-95",
+  primary:
+    "bg-accent-strong text-on-accent shadow-[0_2px_0_rgb(0_0_0/0.12),0_8px_16px_-8px_rgb(166_62_4/0.6)] hover:brightness-110 active:brightness-95",
   secondary: "border border-line-strong bg-surface text-ink hover:bg-surface-2",
   ghost: "text-ink hover:bg-surface-2",
   danger: "bg-danger text-canvas hover:brightness-110",

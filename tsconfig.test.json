@@ -4,14 +4,6 @@
     "incremental": false,
     "plugins": []
   },
-  "include": [
-    "next-env.d.ts",
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "tests/**/*.ts",
-    "vitest.config.mts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["next-env.d.ts", "src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "vitest.config.mts"],
+  "exclude": ["node_modules"]
 }

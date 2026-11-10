@@ -3,7 +3,7 @@
 /* =====================================================================
    Jetons de couleur — « atelier » : vert profond, orange, crème.
    Les neutres sont teintés de vert (jamais de gris pur).
-   Clair par défaut ; sombre via la préférence système ou l'interrupteur.
+   CLAIR par défaut, quel que soit le réglage de l'appareil ; le sombre se choisit avec l'interrupteur.
    Un test (tests/contrast.test.ts) vérifie le contraste AA de ces paires.
    ===================================================================== */
 :root {
@@ -52,56 +52,9 @@
   --s-valide: #2f6b1a;
   --s-publie: #1b3409;
 
-  --shadow: 0 1px 2px rgb(27 52 9 / 0.06), 0 4px 14px rgb(27 52 9 / 0.06);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --canvas: #0f1c08;
-    --surface: #17270e;
-    --surface-2: #203416;
-    --ink: #f1ecdd;
-    --ink-muted: #b0bda1;
-    --line: #2d4421;
-    --line-strong: #6f8f60;
-    --forest: #0a1405;
-    --on-forest: #f1ecdd;
-
-    --accent: #f27a2a;
-    --accent-strong: #f58a42;
-    --on-accent: #1b1004;
-    --accent-soft: #4a2208;
-    --focus: #f58a42;
-
-    --danger: #ff9b8f;
-    --danger-soft: #4a1b15;
-    --success: #9ad37f;
-
-    --t-impact-bg: #25391a;
-    --t-impact-fg: #c3e29a;
-    --t-impact-dot: #8cc55a;
-    --t-patrimoine-bg: #3a3118;
-    --t-patrimoine-fg: #ecd59a;
-    --t-patrimoine-dot: #cfae66;
-    --t-coulisses-bg: #1f3040;
-    --t-coulisses-fg: #b9d1e6;
-    --t-coulisses-dot: #7f9fba;
-    --t-fun-bg: #433512;
-    --t-fun-fg: #f8d878;
-    --t-fun-dot: #eab62a;
-    --t-appel_action-bg: #4a2208;
-    --t-appel_action-fg: #ffc29a;
-    --t-appel_action-dot: #f27a2a;
-
-    --s-a_faire: #9aa68c;
-    --s-en_cours: #7cb4e6;
-    --s-pret_a_valider: #e6b84d;
-    --s-valide: #8ccf70;
-    --s-publie: #f1ecdd;
-
-    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 14px rgb(0 0 0 / 0.25);
-  }
+  --shadow: 0 1px 2px rgb(27 52 9 / 0.05), 0 6px 18px -6px rgb(27 52 9 / 0.12);
+  --shadow-lift: 0 2px 4px rgb(27 52 9 / 0.06), 0 14px 28px -10px rgb(27 52 9 / 0.22);
+  --grid-dot: rgb(27 52 9 / 0.07);
 }
 
 :root[data-theme="dark"] {
@@ -148,7 +101,9 @@
   --s-valide: #8ccf70;
   --s-publie: #f1ecdd;
 
-  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 14px rgb(0 0 0 / 0.25);
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 6px 18px -6px rgb(0 0 0 / 0.4);
+  --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.3), 0 14px 28px -10px rgb(0 0 0 / 0.55);
+  --grid-dot: rgb(241 236 221 / 0.05);
 }
 
 @theme inline {
@@ -190,8 +145,13 @@
   --color-t-appel_action-dot: var(--t-appel_action-dot);
 
   --shadow-card: var(--shadow);
+  --shadow-lift: var(--shadow-lift);
   --animate-gear: gear-spin 90s linear infinite;
-  --animate-shimmer: shimmer 1.6s ease-in-out infinite;
+  --animate-shimmer: shimmer 1.8s ease-in-out infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-gear-reverse: gear-spin 140s linear infinite reverse;
+  --animate-ping-soft: ping-soft 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  --animate-pop: pop 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
 }
 
 @keyframes gear-spin {
@@ -208,14 +168,155 @@
     opacity: 1;
   }
 }
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes slide-out-right {
+  from {
+    transform: none;
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes slide-in-left {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes slide-out-left {
+  from {
+    transform: none;
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+@keyframes slide-in-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes slide-out-down {
+  from {
+    transform: none;
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    scale: 0.96;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+@keyframes scale-out {
+  from {
+    opacity: 1;
+    scale: 1;
+  }
+  to {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+@keyframes ping-soft {
+  75%,
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+@keyframes pop {
+  0% {
+    transform: scale(0.6);
+  }
+  60% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes draw {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes sheen {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
 
 @layer base {
   html {
     background: var(--canvas);
+    scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
   }
   body {
-    background: var(--canvas);
+    background-color: var(--canvas);
+    background-image: radial-gradient(var(--grid-dot) 1.2px, transparent 1.2px);
+    background-size: 26px 26px;
+    background-attachment: fixed;
     color: var(--ink);
     font-family: var(--font-sans);
     line-height: 1.5;
@@ -277,11 +378,129 @@
 :root[data-theme="dark"] .theme-icon-moon {
   display: none;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .theme-icon-sun {
-    display: inline;
+
+/* =====================================================================
+   Animations : discrètes, jamais bloquantes, coupées si « mouvement réduit »
+   ===================================================================== */
+
+/* Apparition échelonnée des blocs d'une page (le fond « backwards » évite
+   de laisser un transform qui casserait les éléments en position fixe). */
+.stagger > * {
+  animation: rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+.stagger > *:nth-child(1) {
+  --i: 0;
+}
+.stagger > *:nth-child(2) {
+  --i: 1;
+}
+.stagger > *:nth-child(3) {
+  --i: 2;
+}
+.stagger > *:nth-child(4) {
+  --i: 3;
+}
+.stagger > *:nth-child(5) {
+  --i: 4;
+}
+.stagger > *:nth-child(6) {
+  --i: 5;
+}
+.stagger > *:nth-child(7) {
+  --i: 6;
+}
+.stagger > *:nth-child(n + 8) {
+  --i: 7;
+}
+
+/* Carte cliquable : léger soulèvement au survol */
+.lift {
+  transition:
+    transform 0.25s cubic-bezier(0.2, 0.7, 0.2, 1),
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+@media (hover: hover) {
+  .lift:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lift);
   }
-  :root:not([data-theme="light"]) .theme-icon-moon {
-    display: none;
+}
+
+/* Trait orange qui se dessine sous les titres de page */
+.title-bar {
+  transform-origin: left;
+  animation: draw 0.7s 0.25s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+
+/* Reflet qui traverse les squelettes de chargement */
+.skeleton {
+  background-image: linear-gradient(
+    100deg,
+    transparent 30%,
+    rgb(255 255 255 / 0.55) 50%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  animation: sheen 1.6s linear infinite;
+}
+:root[data-theme="dark"] .skeleton {
+  background-image: linear-gradient(
+    100deg,
+    transparent 30%,
+    rgb(255 255 255 / 0.08) 50%,
+    transparent 70%
+  );
+}
+
+/* Panneaux Radix (fiche d'un post, tiroir, boîtes de dialogue) : entrée et sortie animées */
+.rx-overlay[data-state="open"] {
+  animation: fade-in 0.22s ease both;
+}
+.rx-overlay[data-state="closed"] {
+  animation: fade-out 0.18s ease both;
+}
+
+.rx-sheet[data-state="open"] {
+  animation: slide-in-up 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.rx-sheet[data-state="closed"] {
+  animation: slide-out-down 0.22s ease-in both;
+}
+@media (min-width: 768px) {
+  .rx-sheet[data-state="open"] {
+    animation-name: slide-in-right;
   }
+  .rx-sheet[data-state="closed"] {
+    animation-name: slide-out-right;
+  }
+}
+
+.rx-drawer[data-state="open"] {
+  animation: slide-in-left 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.rx-drawer[data-state="closed"] {
+  animation: slide-out-left 0.2s ease-in both;
+}
+
+/* Boîtes de dialogue : feuille qui monte sur mobile, carte qui s'ouvre sur ordinateur */
+.rx-dialog[data-state="open"] {
+  animation: slide-in-up 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.rx-dialog[data-state="closed"] {
+  animation: slide-out-down 0.2s ease-in both;
+}
+@media (min-width: 768px) {
+  .rx-dialog[data-state="open"] {
+    animation-name: scale-in;
+  }
+  .rx-dialog[data-state="closed"] {
+    animation-name: scale-out;
+  }
+}
+
+/* Entrée douce des messages */
+.notice-in {
+  animation: rise 0.35s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
