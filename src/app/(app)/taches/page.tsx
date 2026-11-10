@@ -29,7 +29,10 @@ export default async function TasksPage({ searchParams }: { searchParams: Search
   const bodyKey = `${query.vue}|${query.filtre}`;
 
   const seg = (active: boolean) =>
-    cn("inline-flex min-h-11 items-center rounded-md px-4 text-sm font-semibold", active ? "bg-forest text-on-forest" : "text-ink-muted hover:text-ink");
+    cn(
+      "inline-flex min-h-11 items-center rounded-md px-4 text-sm font-semibold",
+      active ? "bg-forest text-on-forest" : "text-ink-muted hover:text-ink",
+    );
 
   return (
     <>
@@ -38,19 +41,41 @@ export default async function TasksPage({ searchParams }: { searchParams: Search
       <QuickAdd moreHref={tasksHref(query, { nouvelle: "1" })} />
 
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <nav aria-label="Qui" className="border-line-strong bg-surface inline-flex rounded-lg border p-0.5">
-          <Link href={tasksHref(query, { filtre: "moi", tache: null, nouvelle: null })} aria-current={query.filtre === "moi" ? "page" : undefined} className={seg(query.filtre === "moi")}>
+        <nav
+          aria-label="Qui"
+          className="border-line-strong bg-surface inline-flex rounded-lg border p-0.5"
+        >
+          <Link
+            href={tasksHref(query, { filtre: "moi", tache: null, nouvelle: null })}
+            aria-current={query.filtre === "moi" ? "page" : undefined}
+            className={seg(query.filtre === "moi")}
+          >
             Mes tâches
           </Link>
-          <Link href={tasksHref(query, { filtre: "tous", tache: null, nouvelle: null })} aria-current={query.filtre === "tous" ? "page" : undefined} className={seg(query.filtre === "tous")}>
+          <Link
+            href={tasksHref(query, { filtre: "tous", tache: null, nouvelle: null })}
+            aria-current={query.filtre === "tous" ? "page" : undefined}
+            className={seg(query.filtre === "tous")}
+          >
             Toute l&apos;équipe
           </Link>
         </nav>
-        <nav aria-label="Affichage" className="border-line-strong bg-surface inline-flex rounded-lg border p-0.5">
-          <Link href={tasksHref(query, { vue: "kanban", tache: null, nouvelle: null })} aria-current={query.vue === "kanban" ? "page" : undefined} className={seg(query.vue === "kanban")}>
+        <nav
+          aria-label="Affichage"
+          className="border-line-strong bg-surface inline-flex rounded-lg border p-0.5"
+        >
+          <Link
+            href={tasksHref(query, { vue: "kanban", tache: null, nouvelle: null })}
+            aria-current={query.vue === "kanban" ? "page" : undefined}
+            className={seg(query.vue === "kanban")}
+          >
             Kanban
           </Link>
-          <Link href={tasksHref(query, { vue: "liste", tache: null, nouvelle: null })} aria-current={query.vue === "liste" ? "page" : undefined} className={seg(query.vue === "liste")}>
+          <Link
+            href={tasksHref(query, { vue: "liste", tache: null, nouvelle: null })}
+            aria-current={query.vue === "liste" ? "page" : undefined}
+            className={seg(query.vue === "liste")}
+          >
             Liste
           </Link>
         </nav>
@@ -112,7 +137,11 @@ async function Workloads() {
   const { supabase } = await requireMember();
   const today = todayISO();
   const [{ data }, team] = await Promise.all([
-    supabase.from("tasks").select("responsable_id, echeance, priorite").neq("statut", "valide").limit(2000),
+    supabase
+      .from("tasks")
+      .select("responsable_id, echeance, priorite")
+      .neq("statut", "valide")
+      .limit(2000),
     getTeam(),
   ]);
   const map = new Map<string, Workload>();
@@ -124,7 +153,9 @@ async function Workloads() {
     if (t.priorite === "haute") l.high++;
     map.set(t.responsable_id, l);
   }
-  return <WorkloadPanel people={team.filter((m) => m.active).map(toLite)} load={[...map.values()]} />;
+  return (
+    <WorkloadPanel people={team.filter((m) => m.active).map(toLite)} load={[...map.values()]} />
+  );
 }
 
 async function Sheet({ query, me }: { query: TaskQuery; me: { id: string; isAdmin: boolean } }) {
@@ -143,13 +174,31 @@ async function Sheet({ query, me }: { query: TaskQuery; me: { id: string; isAdmi
       post_id: query.nouvelle !== "1" ? query.nouvelle : "",
       statut: "a_faire",
     };
-    return <TaskSheet mode="new" defaults={defaults} attachments={[]} people={people} posts={posts} me={me} closeHref={closeHref} />;
+    return (
+      <TaskSheet
+        mode="new"
+        defaults={defaults}
+        attachments={[]}
+        people={people}
+        posts={posts}
+        me={me}
+        closeHref={closeHref}
+      />
+    );
   }
 
-  const { data: task } = await supabase.from("tasks").select("*").eq("id", query.tache!).maybeSingle();
+  const { data: task } = await supabase
+    .from("tasks")
+    .select("*")
+    .eq("id", query.tache!)
+    .maybeSingle();
   if (!task) redirect(closeHref);
   const t = task as TaskRow;
-  const { data: att } = await supabase.from("attachments").select("*").eq("task_id", t.id).order("created_at");
+  const { data: att } = await supabase
+    .from("attachments")
+    .select("*")
+    .eq("task_id", t.id)
+    .order("created_at");
   const attachments = await signAttachments(supabase, (att ?? []) as AttachmentRow[]);
   const defaults: TaskInput = {
     titre: t.titre,
@@ -160,5 +209,16 @@ async function Sheet({ query, me }: { query: TaskQuery; me: { id: string; isAdmi
     post_id: t.post_id ?? "",
     statut: t.statut,
   };
-  return <TaskSheet mode="edit" task={t} defaults={defaults} attachments={attachments} people={people} posts={posts} me={me} closeHref={closeHref} />;
+  return (
+    <TaskSheet
+      mode="edit"
+      task={t}
+      defaults={defaults}
+      attachments={attachments}
+      people={people}
+      posts={posts}
+      me={me}
+      closeHref={closeHref}
+    />
+  );
 }

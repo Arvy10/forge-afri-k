@@ -8,7 +8,12 @@ import { Trash2 } from "lucide-react";
 import { createTask, deleteTask, updateTask } from "@/actions/tasks";
 import { Button } from "@/components/ui/Button";
 import { FormError, SelectField, TextArea, TextField } from "@/components/ui/Field";
-import { TASK_PRIORITIES, TASK_PRIORITY_LABEL, TASK_STATUSES, TASK_STATUS_LABEL } from "@/lib/constants";
+import {
+  TASK_PRIORITIES,
+  TASK_PRIORITY_LABEL,
+  TASK_STATUSES,
+  TASK_STATUS_LABEL,
+} from "@/lib/constants";
 import type { PersonLite } from "@/lib/data";
 import { taskSchema, type TaskInput, type TaskValues } from "@/lib/schemas";
 import type { PostLabel } from "./TasksView";
@@ -44,7 +49,10 @@ export function TaskForm({
     handleSubmit,
     setError: setFieldError,
     formState: { errors },
-  } = useForm<TaskInput, unknown, TaskValues>({ resolver: zodResolver(taskSchema), defaultValues: defaults });
+  } = useForm<TaskInput, unknown, TaskValues>({
+    resolver: zodResolver(taskSchema),
+    defaultValues: defaults,
+  });
 
   return (
     <form
@@ -57,7 +65,8 @@ export function TaskForm({
           const res = mode === "new" ? await createTask(values) : await updateTask(taskId!, values);
           if (!res.ok) {
             setError(res.error);
-            for (const [k, m] of Object.entries(res.fieldErrors ?? {})) setFieldError(k as keyof TaskInput, { message: m });
+            for (const [k, m] of Object.entries(res.fieldErrors ?? {}))
+              setFieldError(k as keyof TaskInput, { message: m });
             return;
           }
           if (mode === "new") router.push(closeHref, { scroll: false });
@@ -70,18 +79,33 @@ export function TaskForm({
     >
       {!canEdit && (
         <p role="note" className="bg-surface-2 rounded-lg px-3 py-2.5 text-sm">
-          Tu peux lire cette tâche. Seuls son responsable et l&apos;administrateur peuvent la modifier.
+          Tu peux lire cette tâche. Seuls son responsable et l&apos;administrateur peuvent la
+          modifier.
         </p>
       )}
       <FormError message={error} />
       {saved && (
-        <p role="status" className="bg-t-impact-bg text-t-impact-fg rounded-lg px-3 py-2.5 text-sm font-medium">
+        <p
+          role="status"
+          className="bg-t-impact-bg text-t-impact-fg rounded-lg px-3 py-2.5 text-sm font-medium"
+        >
           Tâche enregistrée.
         </p>
       )}
       <fieldset disabled={!canEdit || pending} className="space-y-4 disabled:opacity-90">
-        <TextField label="Titre" required maxLength={200} error={errors.titre?.message} {...register("titre")} />
-        <TextArea label="Description" rows={4} error={errors.description?.message} {...register("description")} />
+        <TextField
+          label="Titre"
+          required
+          maxLength={200}
+          error={errors.titre?.message}
+          {...register("titre")}
+        />
+        <TextArea
+          label="Description"
+          rows={4}
+          error={errors.description?.message}
+          {...register("description")}
+        />
         <div className="grid grid-cols-2 gap-3">
           <SelectField
             label="Responsable"
@@ -97,7 +121,12 @@ export function TaskForm({
               </option>
             ))}
           </SelectField>
-          <TextField label="Échéance" type="date" error={errors.echeance?.message} {...register("echeance")} />
+          <TextField
+            label="Échéance"
+            type="date"
+            error={errors.echeance?.message}
+            {...register("echeance")}
+          />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <SelectField label="Priorité" error={errors.priorite?.message} {...register("priorite")}>
@@ -115,7 +144,11 @@ export function TaskForm({
             ))}
           </SelectField>
         </div>
-        <SelectField label="Post lié (facultatif)" error={errors.post_id?.message} {...register("post_id")}>
+        <SelectField
+          label="Post lié (facultatif)"
+          error={errors.post_id?.message}
+          {...register("post_id")}
+        >
           <option value="">Aucun</option>
           {posts.map((p) => (
             <option key={p.id} value={p.id}>

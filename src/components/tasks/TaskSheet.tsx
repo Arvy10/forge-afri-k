@@ -42,8 +42,13 @@ export function TaskSheet({
           className="bg-canvas md:border-line fixed inset-0 z-50 flex flex-col overflow-hidden md:left-auto md:w-[34rem] md:max-w-[90vw] md:border-l md:shadow-2xl"
         >
           <header className="border-line flex items-center justify-between gap-3 border-b px-4 py-3 md:px-6">
-            <Dialog.Title className="font-display text-xl font-bold">{mode === "new" ? "Nouvelle tâche" : "Tâche"}</Dialog.Title>
-            <Dialog.Close className="hover:bg-surface-2 -mr-2 inline-flex size-11 items-center justify-center rounded-lg" aria-label="Fermer">
+            <Dialog.Title className="font-display text-xl font-bold">
+              {mode === "new" ? "Nouvelle tâche" : "Tâche"}
+            </Dialog.Title>
+            <Dialog.Close
+              className="hover:bg-surface-2 -mr-2 inline-flex size-11 items-center justify-center rounded-lg"
+              aria-label="Fermer"
+            >
               <X aria-hidden className="size-5" />
             </Dialog.Close>
           </header>
@@ -62,7 +67,12 @@ export function TaskSheet({
             />
             {task && (
               <div className="pb-10">
-                <AttachmentsPanel parent={{ task_id: task.id }} items={attachments} canUpload={canEdit} me={me} />
+                <AttachmentsPanel
+                  parent={{ task_id: task.id }}
+                  items={attachments}
+                  canUpload={canEdit}
+                  me={me}
+                />
               </div>
             )}
           </div>

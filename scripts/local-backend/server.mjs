@@ -312,11 +312,23 @@ async function authRoute(req, res, url) {
       : send(res, 401, { code: 401, msg: "user not found" });
   }
   if (path === "/invite" && req.method === "POST") {
-    if (req.headers.authorization !== `Bearer ${SERVICE_KEY}` && req.headers.apikey !== SERVICE_KEY) return send(res, 401, { msg: "service_role requis" });
+    if (req.headers.authorization !== `Bearer ${SERVICE_KEY}` && req.headers.apikey !== SERVICE_KEY)
+      return send(res, 401, { msg: "service_role requis" });
     const body = JSON.parse((await readBody(req)) || "{}");
-    const { rows: existing } = await pool.query("select 1 from auth.users where lower(email) = lower($1)", [body.email]);
-    if (existing[0]) return send(res, 422, { code: 422, error_code: "email_exists", msg: "A user with this email address has already been registered" });
-    const { rows } = await pool.query("insert into auth.users (email, raw_user_meta_data) values ($1, $2) returning id, email, raw_user_meta_data", [body.email, body.data ?? {}]);
+    const { rows: existing } = await pool.query(
+      "select 1 from auth.users where lower(email) = lower($1)",
+      [body.email],
+    );
+    if (existing[0])
+      return send(res, 422, {
+        code: 422,
+        error_code: "email_exists",
+        msg: "A user with this email address has already been registered",
+      });
+    const { rows } = await pool.query(
+      "insert into auth.users (email, raw_user_meta_data) values ($1, $2) returning id, email, raw_user_meta_data",
+      [body.email, body.data ?? {}],
+    );
     console.log(`[invite] ${body.email}`);
     return send(res, 200, userJson(rows[0]));
   }

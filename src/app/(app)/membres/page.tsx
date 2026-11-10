@@ -21,7 +21,11 @@ export default async function MembersPage() {
         actions={isAdmin ? <InviteDialog roles={roles} /> : undefined}
       />
       {visible.length === 0 ? (
-        <EmptyState illustration="people" title="Aucun membre pour l'instant" description="Invite la première personne du pôle par e-mail." />
+        <EmptyState
+          illustration="people"
+          title="Aucun membre pour l'instant"
+          description="Invite la première personne du pôle par e-mail."
+        />
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {visible.map((m) => (

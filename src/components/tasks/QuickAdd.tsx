@@ -49,7 +49,11 @@ export function QuickAdd({ moreHref }: { moreHref: string }) {
       </div>
       <p className="text-ink-muted mt-1.5 text-xs">
         Elle t&apos;est assignée, priorité normale.{" "}
-        <Link href={moreHref} scroll={false} className="text-accent-strong font-medium underline underline-offset-4">
+        <Link
+          href={moreHref}
+          scroll={false}
+          className="text-accent-strong font-medium underline underline-offset-4"
+        >
           Plus d&apos;options
         </Link>
       </p>

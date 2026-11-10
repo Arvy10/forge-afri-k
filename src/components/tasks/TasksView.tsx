@@ -28,8 +28,10 @@ type Props = {
 };
 
 export function TasksView({ tasks, people, posts, me, today, query }: Props) {
-  const [optimistic, apply] = useOptimistic(tasks, (state: TaskRow[], a: { id: string; statut: TaskStatus }) =>
-    state.map((t) => (t.id === a.id ? { ...t, statut: a.statut } : t)),
+  const [optimistic, apply] = useOptimistic(
+    tasks,
+    (state: TaskRow[], a: { id: string; statut: TaskStatus }) =>
+      state.map((t) => (t.id === a.id ? { ...t, statut: a.statut } : t)),
   );
   const [error, setError] = useState<string | null>(null);
   const [, start] = useTransition();
@@ -58,7 +60,10 @@ export function TasksView({ tasks, people, posts, me, today, query }: Props) {
         }
         action={
           query.filtre === "moi" ? (
-            <Link href={tasksHref(query, { filtre: "tous" })} className="border-line-strong bg-surface hover:bg-surface-2 inline-flex min-h-11 items-center rounded-lg border px-3 text-sm font-semibold">
+            <Link
+              href={tasksHref(query, { filtre: "tous" })}
+              className="border-line-strong bg-surface hover:bg-surface-2 inline-flex min-h-11 items-center rounded-lg border px-3 text-sm font-semibold"
+            >
               Voir toutes les tâches
             </Link>
           ) : undefined
@@ -83,10 +88,19 @@ export function TasksView({ tasks, people, posts, me, today, query }: Props) {
           {TASK_STATUSES.map((status) => {
             const col = sorted.filter((t) => t.statut === status);
             return (
-              <section key={status} aria-labelledby={`k-${status}`} className="bg-surface-2/50 rounded-2xl p-2">
-                <h2 id={`k-${status}`} className="font-display mb-2 flex items-center justify-between px-2 pt-1 text-base font-bold">
+              <section
+                key={status}
+                aria-labelledby={`k-${status}`}
+                className="bg-surface-2/50 rounded-2xl p-2"
+              >
+                <h2
+                  id={`k-${status}`}
+                  className="font-display mb-2 flex items-center justify-between px-2 pt-1 text-base font-bold"
+                >
                   {TASK_STATUS_LABEL[status]}
-                  <span className="bg-surface text-ink-muted rounded-full px-2.5 py-0.5 font-sans text-xs font-semibold">{col.length}</span>
+                  <span className="bg-surface text-ink-muted rounded-full px-2.5 py-0.5 font-sans text-xs font-semibold">
+                    {col.length}
+                  </span>
                 </h2>
                 <div className="space-y-2">
                   {col.length === 0 ? (
@@ -97,7 +111,9 @@ export function TasksView({ tasks, people, posts, me, today, query }: Props) {
                         key={t.id}
                         task={t}
                         href={tasksHref(query, { tache: t.id })}
-                        responsable={t.responsable_id ? (peopleById.get(t.responsable_id) ?? null) : null}
+                        responsable={
+                          t.responsable_id ? (peopleById.get(t.responsable_id) ?? null) : null
+                        }
                         today={today}
                         canEdit={canEdit(t)}
                         postLabel={t.post_id ? postById.get(t.post_id) : undefined}
@@ -127,14 +143,39 @@ export function TasksView({ tasks, people, posts, me, today, query }: Props) {
                   onClick={() => onStatus(t.id, done ? "a_faire" : "valide")}
                   className="inline-flex size-11 shrink-0 items-center justify-center disabled:opacity-40"
                 >
-                  <span className={cn("inline-flex size-6 items-center justify-center rounded-md border-2", done ? "border-success bg-success text-canvas" : "border-line-strong bg-surface")}>
+                  <span
+                    className={cn(
+                      "inline-flex size-6 items-center justify-center rounded-md border-2",
+                      done
+                        ? "border-success bg-success text-canvas"
+                        : "border-line-strong bg-surface",
+                    )}
+                  >
                     {done && <Check aria-hidden className="size-4" strokeWidth={3} />}
                   </span>
                 </button>
-                <Link href={tasksHref(query, { tache: t.id })} scroll={false} className="min-h-11 min-w-0 flex-1 py-2">
-                  <span className={cn("block truncate text-sm font-medium", done && "text-ink-muted line-through")}>{t.titre}</span>
-                  <span className={cn("text-xs", late ? "text-accent-strong font-semibold" : "text-ink-muted")}>
-                    {t.echeance ? `${late ? "En retard · " : "Pour le "}${formatDateShort(t.echeance)}` : "Sans échéance"}
+                <Link
+                  href={tasksHref(query, { tache: t.id })}
+                  scroll={false}
+                  className="min-h-11 min-w-0 flex-1 py-2"
+                >
+                  <span
+                    className={cn(
+                      "block truncate text-sm font-medium",
+                      done && "text-ink-muted line-through",
+                    )}
+                  >
+                    {t.titre}
+                  </span>
+                  <span
+                    className={cn(
+                      "text-xs",
+                      late ? "text-accent-strong font-semibold" : "text-ink-muted",
+                    )}
+                  >
+                    {t.echeance
+                      ? `${late ? "En retard · " : "Pour le "}${formatDateShort(t.echeance)}`
+                      : "Sans échéance"}
                     {t.priorite === "haute" && " · Priorité haute"}
                     {who && <span className="md:hidden"> · {who.name.split(" ")[0]}</span>}
                   </span>
@@ -145,7 +186,11 @@ export function TasksView({ tasks, people, posts, me, today, query }: Props) {
                     <span className="w-24 truncate text-sm">{who.name}</span>
                   </span>
                 )}
-                <TaskStatusSelect value={t.statut} disabled={!canEdit(t)} onChange={(s) => onStatus(t.id, s)} />
+                <TaskStatusSelect
+                  value={t.statut}
+                  disabled={!canEdit(t)}
+                  onChange={(s) => onStatus(t.id, s)}
+                />
               </li>
             );
           })}

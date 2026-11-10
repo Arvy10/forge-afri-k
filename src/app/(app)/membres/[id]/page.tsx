@@ -25,8 +25,21 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
 
   const today = todayISO();
   const [{ data: posts }, { data: tasks }] = await Promise.all([
-    supabase.from("posts").select("*").eq("responsable_id", id).neq("statut", "publie").gte("date", today).order("date").limit(10),
-    supabase.from("tasks").select("*").eq("responsable_id", id).neq("statut", "valide").order("echeance", { nullsFirst: false }).limit(10),
+    supabase
+      .from("posts")
+      .select("*")
+      .eq("responsable_id", id)
+      .neq("statut", "publie")
+      .gte("date", today)
+      .order("date")
+      .limit(10),
+    supabase
+      .from("tasks")
+      .select("*")
+      .eq("responsable_id", id)
+      .neq("statut", "valide")
+      .order("echeance", { nullsFirst: false })
+      .limit(10),
   ]);
   const name = member.full_name || member.email;
   const mine = roles.filter((r) => member.role_ids.includes(r.id));
@@ -45,17 +58,28 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
           {member.bio && <p className="mt-3 max-w-2xl text-sm">{member.bio}</p>}
           <div className="mt-3 flex flex-wrap gap-2">
             {wa && (
-              <a href={wa} target="_blank" rel="noopener noreferrer" className="border-line-strong hover:bg-surface-2 inline-flex min-h-11 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium">
+              <a
+                href={wa}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="border-line-strong hover:bg-surface-2 inline-flex min-h-11 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium"
+              >
                 <MessageCircle aria-hidden className="size-4" />
                 {member.whatsapp}
               </a>
             )}
-            <a href={`mailto:${member.email}`} className="border-line-strong hover:bg-surface-2 inline-flex min-h-11 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium">
+            <a
+              href={`mailto:${member.email}`}
+              className="border-line-strong hover:bg-surface-2 inline-flex min-h-11 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium"
+            >
               <Mail aria-hidden className="size-4" />
               {member.email}
             </a>
             {profile.id === member.id && (
-              <Link href="/profil" className="bg-accent-strong text-on-accent inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold">
+              <Link
+                href="/profil"
+                className="bg-accent-strong text-on-accent inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold"
+              >
                 Modifier mon profil
               </Link>
             )}
@@ -71,25 +95,38 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
         ].map(([title, text, fallback]) => (
           <section key={title} className="bg-surface border-line rounded-2xl border p-4">
             <h2 className="font-display text-base font-bold">{title}</h2>
-            <p className="text-ink-muted mt-2 text-sm whitespace-pre-wrap">{text || fallback || "Pas encore renseigné."}</p>
+            <p className="text-ink-muted mt-2 text-sm whitespace-pre-wrap">
+              {text || fallback || "Pas encore renseigné."}
+            </p>
           </section>
         ))}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <section className="bg-surface border-line rounded-2xl border p-4" aria-labelledby="posts-en-cours">
-          <h2 id="posts-en-cours" className="font-display mb-2 text-lg font-bold">Posts à venir</h2>
+        <section
+          className="bg-surface border-line rounded-2xl border p-4"
+          aria-labelledby="posts-en-cours"
+        >
+          <h2 id="posts-en-cours" className="font-display mb-2 text-lg font-bold">
+            Posts à venir
+          </h2>
           {(posts ?? []).length === 0 ? (
             <p className="text-ink-muted text-sm">Aucun post à venir pour cette personne.</p>
           ) : (
             <ul className="divide-line divide-y">
               {((posts ?? []) as PostRow[]).map((p) => (
                 <li key={p.id}>
-                  <Link href={`/calendrier?post=${p.id}&date=${p.date}`} className="flex min-h-11 flex-wrap items-center justify-between gap-2 py-2.5">
+                  <Link
+                    href={`/calendrier?post=${p.id}&date=${p.date}`}
+                    className="flex min-h-11 flex-wrap items-center justify-between gap-2 py-2.5"
+                  >
                     <span className="min-w-0">
-                      <span className="line-clamp-1 block text-sm font-medium">{p.idee || "Idée à définir"}</span>
+                      <span className="line-clamp-1 block text-sm font-medium">
+                        {p.idee || "Idée à définir"}
+                      </span>
                       <span className="text-ink-muted flex items-center gap-2 text-xs">
-                        {formatDayShort(p.date)} {formatDateShort(p.date)} <TypePill type={p.type} compact />
+                        {formatDayShort(p.date)} {formatDateShort(p.date)}{" "}
+                        <TypePill type={p.type} compact />
                       </span>
                     </span>
                     <StatusPill status={p.statut} />
@@ -99,18 +136,28 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
             </ul>
           )}
         </section>
-        <section className="bg-surface border-line rounded-2xl border p-4" aria-labelledby="taches-en-cours">
-          <h2 id="taches-en-cours" className="font-display mb-2 text-lg font-bold">Tâches ouvertes</h2>
+        <section
+          className="bg-surface border-line rounded-2xl border p-4"
+          aria-labelledby="taches-en-cours"
+        >
+          <h2 id="taches-en-cours" className="font-display mb-2 text-lg font-bold">
+            Tâches ouvertes
+          </h2>
           {(tasks ?? []).length === 0 ? (
             <p className="text-ink-muted text-sm">Aucune tâche ouverte.</p>
           ) : (
             <ul className="divide-line divide-y">
               {((tasks ?? []) as TaskRow[]).map((t) => (
                 <li key={t.id}>
-                  <Link href={`/taches?tache=${t.id}`} className="flex min-h-11 flex-wrap items-center justify-between gap-2 py-2.5">
+                  <Link
+                    href={`/taches?tache=${t.id}`}
+                    className="flex min-h-11 flex-wrap items-center justify-between gap-2 py-2.5"
+                  >
                     <span className="min-w-0">
                       <span className="line-clamp-1 block text-sm font-medium">{t.titre}</span>
-                      <span className="text-ink-muted text-xs">{t.echeance ? `Pour le ${formatDateShort(t.echeance)}` : "Sans échéance"}</span>
+                      <span className="text-ink-muted text-xs">
+                        {t.echeance ? `Pour le ${formatDateShort(t.echeance)}` : "Sans échéance"}
+                      </span>
                     </span>
                     <StatusPill status={t.statut} kind="task" />
                   </Link>

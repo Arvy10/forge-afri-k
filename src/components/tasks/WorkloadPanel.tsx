@@ -21,12 +21,21 @@ export function WorkloadPanel({ people, load }: { people: PersonLite[]; load: Wo
             <li key={p.id} className="flex items-center gap-3">
               <Avatar name={p.name} src={p.avatar_url} id={p.id} size="sm" />
               <span className="w-28 shrink-0 truncate text-sm font-medium sm:w-40">{p.name}</span>
-              <span className="bg-surface-2 h-3 min-w-0 flex-1 overflow-hidden rounded-full" role="img" aria-label={`${l.open} tâches ouvertes`}>
-                <span className="bg-forest block h-full rounded-full" style={{ width: `${(l.open / max) * 100}%` }} />
+              <span
+                className="bg-surface-2 h-3 min-w-0 flex-1 overflow-hidden rounded-full"
+                role="img"
+                aria-label={`${l.open} tâches ouvertes`}
+              >
+                <span
+                  className="bg-forest block h-full rounded-full"
+                  style={{ width: `${(l.open / max) * 100}%` }}
+                />
               </span>
               <span className="w-28 shrink-0 text-right text-xs tabular-nums">
                 {l.open} ouverte{l.open > 1 ? "s" : ""}
-                {l.late > 0 && <span className="text-accent-strong block font-semibold">{l.late} en retard</span>}
+                {l.late > 0 && (
+                  <span className="text-accent-strong block font-semibold">{l.late} en retard</span>
+                )}
               </span>
             </li>
           );

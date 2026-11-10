@@ -16,12 +16,23 @@ export default async function RolesPage() {
 
   return (
     <>
-      <PageHeader title="Rôles du pôle" description="Un membre peut avoir plusieurs rôles ; un rôle peut être tenu par plusieurs membres." />
+      <PageHeader
+        title="Rôles du pôle"
+        description="Un membre peut avoir plusieurs rôles ; un rôle peut être tenu par plusieurs membres."
+      />
       {vacant.length > 0 && (
-        <p role="status" className="bg-accent-soft text-ink mb-5 flex items-start gap-2 rounded-xl px-4 py-3 text-sm">
+        <p
+          role="status"
+          className="bg-accent-soft text-ink mb-5 flex items-start gap-2 rounded-xl px-4 py-3 text-sm"
+        >
           <TriangleAlert aria-hidden className="text-accent-strong mt-0.5 size-4 shrink-0" />
           <span>
-            <strong>{vacant.length === 1 ? "1 rôle n'a pas de titulaire" : `${vacant.length} rôles n'ont pas de titulaire`} :</strong>{" "}
+            <strong>
+              {vacant.length === 1
+                ? "1 rôle n'a pas de titulaire"
+                : `${vacant.length} rôles n'ont pas de titulaire`}{" "}
+              :
+            </strong>{" "}
             {vacant.map((r) => r.name).join(", ")}.
           </span>
         </p>
@@ -30,7 +41,10 @@ export default async function RolesPage() {
         {roles.map((r) => {
           const holders = active.filter((m) => m.role_ids.includes(r.id));
           return (
-            <li key={r.id} className="bg-surface border-line shadow-card flex flex-col gap-3 rounded-2xl border p-4">
+            <li
+              key={r.id}
+              className="bg-surface border-line shadow-card flex flex-col gap-3 rounded-2xl border p-4"
+            >
               <div>
                 <h2 className="font-display text-lg font-bold">{r.name}</h2>
                 <p className="text-ink-muted mt-1 text-sm">{r.mission}</p>
@@ -44,8 +58,16 @@ export default async function RolesPage() {
                 <ul className="mt-auto flex flex-wrap gap-2">
                   {holders.map((m) => (
                     <li key={m.id}>
-                      <Link href={`/membres/${m.id}`} className="hover:bg-surface-2 flex min-h-11 items-center gap-2 rounded-full py-1 pr-3 pl-1">
-                        <Avatar name={m.full_name || m.email} src={m.avatar_url} id={m.id} size="sm" />
+                      <Link
+                        href={`/membres/${m.id}`}
+                        className="hover:bg-surface-2 flex min-h-11 items-center gap-2 rounded-full py-1 pr-3 pl-1"
+                      >
+                        <Avatar
+                          name={m.full_name || m.email}
+                          src={m.avatar_url}
+                          id={m.id}
+                          size="sm"
+                        />
                         <span className="text-sm font-medium">{m.full_name || m.email}</span>
                       </Link>
                     </li>

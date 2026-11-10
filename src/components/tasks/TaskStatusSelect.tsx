@@ -19,7 +19,10 @@ export function TaskStatusSelect({
       <span aria-hidden className="pointer-events-none">
         <StatusPill status={value} kind="task" className="pr-7" />
       </span>
-      <ChevronDown aria-hidden className="text-ink-muted pointer-events-none absolute top-1/2 right-2 size-3.5 -translate-y-1/2" />
+      <ChevronDown
+        aria-hidden
+        className="text-ink-muted pointer-events-none absolute top-1/2 right-2 size-3.5 -translate-y-1/2"
+      />
       <select
         aria-label="Statut de la tâche"
         value={value}

@@ -26,7 +26,10 @@ export function parseTaskQuery(raw: Record<string, string | string[] | undefined
   return q;
 }
 
-export function tasksHref(q: TaskQuery, patch: { [K in keyof TaskQuery]?: TaskQuery[K] | null } = {}): string {
+export function tasksHref(
+  q: TaskQuery,
+  patch: { [K in keyof TaskQuery]?: TaskQuery[K] | null } = {},
+): string {
   const m: Record<string, string | null | undefined> = { ...q, ...patch };
   const params = new URLSearchParams();
   for (const k of ["vue", "filtre", "tache", "nouvelle"] as const) if (m[k]) params.set(k, m[k]!);

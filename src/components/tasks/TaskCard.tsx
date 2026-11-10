@@ -40,13 +40,29 @@ export function TaskCard({
         task.statut === "valide" && "opacity-75",
       )}
     >
-      <Link href={href} scroll={false} className={cn("text-sm leading-snug font-medium after:absolute after:inset-0 after:content-['']", task.statut === "valide" && "line-through")}>
+      <Link
+        href={href}
+        scroll={false}
+        className={cn(
+          "text-sm leading-snug font-medium after:absolute after:inset-0 after:content-['']",
+          task.statut === "valide" && "line-through",
+        )}
+      >
         {task.titre}
       </Link>
       <div className="text-ink-muted flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
         {task.echeance && (
-          <span className={cn("inline-flex items-center gap-1", late && "text-accent-strong font-semibold")}>
-            {late ? <TriangleAlert aria-hidden className="size-3.5" /> : <CalendarDays aria-hidden className="size-3.5" />}
+          <span
+            className={cn(
+              "inline-flex items-center gap-1",
+              late && "text-accent-strong font-semibold",
+            )}
+          >
+            {late ? (
+              <TriangleAlert aria-hidden className="size-3.5" />
+            ) : (
+              <CalendarDays aria-hidden className="size-3.5" />
+            )}
             {late ? "En retard · " : ""}
             {formatDateShort(task.echeance)}
           </span>
@@ -68,14 +84,23 @@ export function TaskCard({
         <span className="flex max-w-full shrink-0 items-center gap-2">
           {responsable ? (
             <>
-              <Avatar name={responsable.name} src={responsable.avatar_url} id={responsable.id} size="sm" />
+              <Avatar
+                name={responsable.name}
+                src={responsable.avatar_url}
+                id={responsable.id}
+                size="sm"
+              />
               <span className="truncate text-xs font-medium">{responsable.name.split(" ")[0]}</span>
             </>
           ) : (
             <span className="text-ink-muted text-xs italic">Sans responsable</span>
           )}
         </span>
-        <TaskStatusSelect value={task.statut} disabled={!canEdit} onChange={(s) => onStatus(task.id, s)} />
+        <TaskStatusSelect
+          value={task.statut}
+          disabled={!canEdit}
+          onChange={(s) => onStatus(task.id, s)}
+        />
       </div>
     </article>
   );
