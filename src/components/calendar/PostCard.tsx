@@ -102,8 +102,8 @@ export function PostCard({
         </p>
       )}
 
-      <div className="relative z-10 mt-auto flex items-center justify-between gap-2 pt-0.5">
-        <span className="flex min-w-0 items-center gap-2">
+      <div className="relative z-10 mt-auto flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 pt-0.5">
+        <span className="flex max-w-full shrink-0 items-center gap-2">
           {responsable ? (
             <>
               <Avatar
