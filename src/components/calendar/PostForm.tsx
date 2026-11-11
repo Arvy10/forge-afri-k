@@ -25,15 +25,15 @@ import {
   isISODate,
   isOffRhythm,
 } from "@/lib/dates";
-import type { PersonLite } from "@/lib/data";
+import type { MemberLite } from "@/lib/members";
 import { postSchema, type PostInput, type PostValues } from "@/lib/schemas";
 
 type Props = {
   mode: "new" | "edit";
   postId?: string;
   defaults: PostInput;
-  people: PersonLite[];
-  me: { id: string; isAdmin: boolean };
+  people: MemberLite[];
+  me: { id: string | null; isAdmin: boolean };
   /** Peut modifier ce post (responsable ou admin). */
   canEdit: boolean;
   closeHref: string;

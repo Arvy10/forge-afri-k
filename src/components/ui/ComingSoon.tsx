@@ -1,4 +1,5 @@
-import { requireMember } from "@/lib/auth";
+import { db } from "@/server/db";
+import { requireSession } from "@/server/session";
 import { EmptyState } from "./EmptyState";
 import type { IllustrationKind } from "./Illustration";
 import { NotifyButton } from "./NotifyButton";
@@ -21,13 +22,15 @@ export async function ComingSoon({
   emptyTitle: string;
   emptyDescription: string;
 }) {
-  const { supabase, user } = await requireMember();
-  const { data } = await supabase
-    .from("feature_interests")
-    .select("feature")
-    .eq("profile_id", user.id)
-    .eq("feature", feature)
-    .maybeSingle();
+  const auth = await requireSession();
+  const { data } = auth.memberId
+    ? await db()
+        .from("pc_feature_interests")
+        .select("feature")
+        .eq("member_id", auth.memberId)
+        .eq("feature", feature)
+        .maybeSingle()
+    : { data: null };
 
   return (
     <>

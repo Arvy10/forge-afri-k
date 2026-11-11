@@ -21,7 +21,7 @@ import {
 } from "@/lib/calendar-params";
 import { cn } from "@/lib/cn";
 import { buttonClass } from "@/components/ui/Button";
-import type { PersonLite } from "@/lib/data";
+import type { MemberLite } from "@/lib/members";
 
 const VIEW_LABEL: Record<View, string> = { semaine: "Semaine", mois: "Mois", liste: "Liste" };
 
@@ -34,7 +34,7 @@ export function CalendarToolbar({
   query: CalendarQuery;
   today: string;
   periodLabel: string;
-  people: PersonLite[];
+  people: MemberLite[];
 }) {
   const router = useRouter();
   const go = (patch: Parameters<typeof calendarHref>[1]) =>

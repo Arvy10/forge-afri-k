@@ -171,3 +171,11 @@ export function formatRelative(timestamp: string, now: Date = new Date()): strin
   if (diffMin < 1440 * 7) return `il y a ${Math.floor(diffMin / 1440)} j`;
   return formatDateTime(timestamp);
 }
+
+/** « Aujourd'hui », « Demain », « Hier », sinon « ven. 14 nov. ». */
+export function formatDueLabel(due: ISODate, today: ISODate): string {
+  if (due === today) return "Aujourd'hui";
+  if (due === addDaysISO(today, 1)) return "Demain";
+  if (due === addDaysISO(today, -1)) return "Hier";
+  return `${formatDayShort(due)} ${formatDateShort(due)}`;
+}

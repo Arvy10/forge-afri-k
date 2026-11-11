@@ -4,7 +4,8 @@ import { GuideEditor } from "@/components/guide/GuideEditor";
 import { bulletItems, Markdown } from "@/components/guide/Markdown";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { requireMember } from "@/lib/auth";
+import { db } from "@/server/db";
+import { requireSession } from "@/server/session";
 import { CONTENT_TYPES, CONTENT_TYPE_META } from "@/lib/constants";
 import { TypePill } from "@/components/ui/TypePill";
 import type { GuideSectionRow } from "@/lib/database.types";
@@ -12,8 +13,8 @@ import type { GuideSectionRow } from "@/lib/database.types";
 export const metadata: Metadata = { title: "Règles et guide" };
 
 export default async function GuidePage() {
-  const { supabase, isAdmin } = await requireMember();
-  const { data } = await supabase.from("guide_sections").select("*").order("ordre");
+  const { isAdmin } = await requireSession();
+  const { data } = await db().from("pc_guide_sections").select("*").order("ordre");
   const sections = (data ?? []) as GuideSectionRow[];
   const by = new Map(sections.map((s) => [s.slug, s]));
   const todo = by.get("a-faire");
@@ -27,7 +28,7 @@ export default async function GuidePage() {
         <EmptyState
           illustration="book"
           title="Le guide est vide"
-          description="Les règles du pôle apparaîtront ici. Exécute le fichier supabase/seed.sql pour charger le contenu de départ."
+          description="Les règles du pôle apparaîtront ici. Le contenu de départ est chargé par la migration « pc_seed »."
         />
       </>
     );

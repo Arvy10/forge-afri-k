@@ -3,31 +3,39 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
-import { AttachmentsPanel } from "@/components/shared/AttachmentsPanel";
-import { LinkedTasks } from "./LinkedTasks";
-import { CommentsPanel } from "./CommentsPanel";
-import { PostForm } from "./PostForm";
-import { PostHistory } from "./PostHistory";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { TypePill } from "@/components/ui/TypePill";
-import type { PersonLite } from "@/lib/data";
-import type { PostDetail } from "@/lib/posts-data";
+import type { MemberLite } from "@/lib/members";
 import type { PostInput } from "@/lib/schemas";
+import type { PostDetail } from "@/server/posts";
+import { LinkedTasks } from "./LinkedTasks";
+import { PostForm } from "./PostForm";
 
 type Props = {
   mode: "new" | "edit";
   defaults: PostInput;
   detail?: PostDetail;
-  people: PersonLite[];
-  me: { id: string; isAdmin: boolean };
+  people: MemberLite[];
+  me: { id: string | null; isAdmin: boolean };
   closeHref: string;
+  today: string;
+  canAddTask: boolean;
 };
 
 /** Fiche d'un post : panneau latéral sur ordinateur, plein écran sur mobile. */
-export function PostSheet({ mode, defaults, detail, people, me, closeHref }: Props) {
+export function PostSheet({
+  mode,
+  defaults,
+  detail,
+  people,
+  me,
+  closeHref,
+  today,
+  canAddTask,
+}: Props) {
   const router = useRouter();
   const post = detail?.post;
-  const canEdit = mode === "new" || me.isAdmin || post?.responsable_id === me.id;
+  const canEdit = mode === "new" || me.isAdmin || (!!me.id && post?.responsable_id === me.id);
 
   return (
     <Dialog.Root open onOpenChange={(open) => !open && router.push(closeHref, { scroll: false })}>
@@ -50,7 +58,7 @@ export function PostSheet({ mode, defaults, detail, people, me, closeHref }: Pro
               )}
             </div>
             <Dialog.Close
-              className="hover:bg-surface-2 -mr-2 inline-flex size-11 shrink-0 items-center justify-center rounded-lg"
+              className="hover:bg-surface-2 -mr-2 inline-flex size-12 shrink-0 items-center justify-center rounded-lg"
               aria-label="Fermer la fiche"
             >
               <X aria-hidden className="size-5" />
@@ -69,21 +77,16 @@ export function PostSheet({ mode, defaults, detail, people, me, closeHref }: Pro
               closeHref={closeHref}
             />
             {detail && post && (
-              <div className="space-y-8 pb-10">
-                <LinkedTasks postId={post.id} tasks={detail.tasks} people={people} />
-                <AttachmentsPanel
-                  parent={{ post_id: post.id }}
-                  items={detail.attachments}
-                  canUpload={canEdit}
-                  me={me}
-                />
-                <CommentsPanel
+              <div className="pb-10">
+                <LinkedTasks
                   postId={post.id}
-                  comments={detail.comments}
-                  people={people}
+                  postLabel={`Post n° ${post.numero}${post.idee ? ` · ${post.idee.slice(0, 40)}` : ""}`}
+                  tasks={detail.tasks}
+                  members={people}
                   me={me}
+                  today={today}
+                  canAdd={canAddTask}
                 />
-                <PostHistory history={detail.history} people={people} />
               </div>
             )}
           </div>

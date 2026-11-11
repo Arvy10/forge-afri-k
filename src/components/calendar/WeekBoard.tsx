@@ -16,7 +16,7 @@ import {
   isoWeekday,
   type ISODate,
 } from "@/lib/dates";
-import type { PersonLite } from "@/lib/data";
+import type { MemberLite } from "@/lib/members";
 import type { PostRow } from "@/lib/database.types";
 import { PostCard } from "./PostCard";
 import { usePostMutations } from "./usePostMutations";
@@ -25,8 +25,8 @@ type Props = {
   /** Jours affichés en colonnes (lundi → vendredi). */
   days: ISODate[];
   posts: PostRow[];
-  people: PersonLite[];
-  me: { id: string; isAdmin: boolean };
+  people: MemberLite[];
+  me: { id: string | null; isAdmin: boolean };
   today: ISODate;
   query: CalendarQuery;
   /** Désactive le glisser-déposer (accueil, vue filtrée…). */

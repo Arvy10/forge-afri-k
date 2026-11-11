@@ -8,13 +8,13 @@ import { POST_FORMAT_LABEL, type PostStatus } from "@/lib/constants";
 import { cn } from "@/lib/cn";
 import { formatDayShort, formatDateShort, isOffRhythm, isPrepLate } from "@/lib/dates";
 import type { PostRow } from "@/lib/database.types";
-import type { PersonLite } from "@/lib/data";
+import type { MemberLite } from "@/lib/members";
 import { ChannelChips } from "./ChannelChips";
 import { StatusSelect } from "./StatusSelect";
 
 export type PostCardProps = {
   post: PostRow;
-  responsable: PersonLite | null;
+  responsable: MemberLite | null;
   href: string;
   today: string;
   canEdit: boolean;
@@ -106,13 +106,8 @@ export function PostCard({
         <span className="flex max-w-full shrink-0 items-center gap-2">
           {responsable ? (
             <>
-              <Avatar
-                name={responsable.name}
-                src={responsable.avatar_url}
-                id={responsable.id}
-                size="sm"
-              />
-              <span className="truncate text-xs font-medium">{responsable.name.split(" ")[0]}</span>
+              <Avatar name={responsable.name} color={responsable.couleur} size="sm" />
+              <span className="truncate text-xs font-medium">{responsable.prenom}</span>
             </>
           ) : (
             <span className="text-ink-muted text-xs italic">Sans responsable</span>

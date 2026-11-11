@@ -6,7 +6,7 @@ import { StatusPill } from "@/components/ui/StatusPill";
 import { TypePill } from "@/components/ui/TypePill";
 import { cn } from "@/lib/cn";
 import { formatDayLong, formatTime } from "@/lib/dates";
-import type { PersonLite } from "@/lib/data";
+import type { MemberLite } from "@/lib/members";
 import type { PostRow } from "@/lib/database.types";
 import { Countdown } from "./Countdown";
 
@@ -15,7 +15,7 @@ export function NextPostCard({
   responsable,
 }: {
   post: PostRow | null;
-  responsable: PersonLite | null;
+  responsable: MemberLite | null;
 }) {
   if (!post)
     return (
@@ -91,12 +91,7 @@ export function NextPostCard({
       <p className="flex items-center gap-2 text-sm">
         {responsable ? (
           <>
-            <Avatar
-              name={responsable.name}
-              src={responsable.avatar_url}
-              id={responsable.id}
-              size="sm"
-            />
+            <Avatar name={responsable.name} color={responsable.couleur} size="sm" />
             <span>
               Responsable : <strong>{responsable.name}</strong>
             </span>

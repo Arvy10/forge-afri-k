@@ -112,7 +112,8 @@ describe("import des posts", () => {
       statut: "en_cours",
       lien: "https://exemple.org/x",
       notes: "",
-      created_by: null,
+      cree_par: null,
+      maj_par: null,
       created_at: "",
       updated_at: "",
     } as PostRow;

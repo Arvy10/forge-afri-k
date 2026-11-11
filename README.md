@@ -1,290 +1,175 @@
-# Forge Afri'K — Site privé du pôle Communication & Réseau
+# Forge Afri'K — Site du pôle Communication & Réseau (V2)
 
-Espace de travail interne : calendrier éditorial, membres et rôles, tâches, règles et projets.
-Mobile d'abord, clair et sombre, accès réservé aux membres invités.
+Outil de travail d'équipe, pensé pour le **téléphone** : mon espace (mes tâches, mes livrables), suivi de l'équipe avec relances, calendrier éditorial, règles et projets.
 
-**Stack** : Next.js 16 (App Router) · TypeScript strict · Tailwind CSS 4 · Supabase (Auth, Postgres + RLS, Storage) · Zod · React Hook Form · date-fns (fuseau `Africa/Brazzaville`).
+**Pas de comptes, pas d'e-mails.** Tout le pôle utilise **un code d'accès commun**, puis chacun choisit son prénom (« Qui es-tu ? »). L'ambassadeur dispose en plus d'un **code administrateur**.
 
----
-
-## 0. Voir le site tout de suite (aperçu visuel)
-
-Tant que les clés Supabase ne sont **pas** renseignées, le site s'ouvre en **mode aperçu visuel** : pas de connexion, données d'exemple fictives, bandeau « Aperçu visuel » en haut, et **rien n'est enregistré** (toute modification affiche un message). Le bandeau permet de basculer entre « Avec des exemples » et « Vide (comme au départ) » pour voir les états vides.
-
-Il s'éteint **tout seul** dès que `NEXT_PUBLIC_SUPABASE_URL` et `NEXT_PUBLIC_SUPABASE_ANON_KEY` existent au moment du build : le site redevient privé, avec connexion obligatoire. Comme ces variables sont figées au build, il faut redéployer après les avoir ajoutées.
+**Stack** : Next.js 16 (App Router) · TypeScript strict · Tailwind CSS 4 · Supabase (Postgres + Storage, **accès uniquement par le serveur**) · `jose` (cookies signés) · `bcryptjs` · Zod · React Hook Form · date-fns (fuseau `Africa/Brazzaville`).
 
 ---
 
-## 1. Ce qu'il te faut
+## 1. Comment fonctionne l'accès
 
-| Élément                                                                              | Où                  |
-| ------------------------------------------------------------------------------------ | ------------------- |
-| Un compte [Supabase](https://supabase.com) (offre gratuite suffisante pour démarrer) | supabase.com        |
-| Un hébergement Node.js : **Hostinger Business / Cloud** ou **VPS** (voir §8)         | hostinger.com       |
-| Node.js 20.9 ou plus (22 recommandé) en local                                        | nodejs.org          |
-| Un expéditeur d'e-mails pour les invitations (voir §3.4)                             | Resend, Brevo, etc. |
-
----
-
-## 2. Créer le projet Supabase
-
-1. Sur supabase.com : **New project**. Choisis une région proche (ex. `eu-west` / `eu-central`) et un mot de passe de base de données (garde-le dans un gestionnaire de mots de passe).
-2. Ouvre **SQL Editor → New query**, colle le contenu de [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql), puis **Run**. Tables, index, triggers, RLS et espaces de stockage sont créés d'un coup.
-3. Nouvelle requête, colle [`supabase/seed.sql`](supabase/seed.sql), **Run**. Il charge les 6 rôles, les sections du guide, les projets et la frise. **Aucun post n'est créé** : le calendrier démarre vide. Tu peux relancer ce fichier sans risque (il ne réécrit jamais ce que l'admin a modifié).
-4. Récupère les clés dans **Project settings → API** : `Project URL`, clé `anon` (publique) et clé `service_role` (**secrète**).
-
----
-
-## 3. Réglages d'authentification (à ne pas sauter)
-
-Dans **Authentication** :
-
-### 3.1 Bloquer l'inscription publique
-
-**Sign In / Providers → Email** : désactive **« Allow new users to sign up »**. Seul l'admin peut inviter (l'invitation passe par la clé `service_role`, côté serveur).
-
-### 3.2 URL du site
-
-**URL Configuration** :
-
-- **Site URL** : l'adresse publique du site, ex. `https://pole-com.forgeafrik.org`
-- **Redirect URLs** : ajoute `https://pole-com.forgeafrik.org/**` et `http://localhost:3000/**`
-
-### 3.3 Modèles d'e-mail (obligatoire pour que les liens fonctionnent)
-
-**Email Templates**. Remplace le lien par défaut `{{ .ConfirmationURL }}` :
-
-- **Invite user** — lien :
-  ```
-  {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite&next=/definir-mot-de-passe
-  ```
-- **Reset password** — lien :
-  ```
-  {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/definir-mot-de-passe
-  ```
-
-Exemple de corps (Invite) :
-
-```html
-<h2>Bienvenue dans le pôle Communication & Réseau</h2>
-<p>Tu es invité(e) à rejoindre l'espace de travail de Forge Afri'K.</p>
-<p>
-  <a
-    href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite&next=/definir-mot-de-passe"
-    >Choisir mon mot de passe</a
-  >
-</p>
+```
+Code d'accès commun  →  « Qui es-tu ? »  →  Mon espace
+        (tout le pôle)      (un clic)
+Mode administrateur : second code, 12 heures (bouton discret dans le menu)
 ```
 
-### 3.4 Envoi des e-mails
+- Le code est vérifié **côté serveur**. Il n'est jamais dans le code source ni envoyé au navigateur. Il vient de la variable `ACCESS_CODE`, ou — dès que l'admin le change dans **Réglages** — d'une **empreinte bcrypt** stockée dans `pc_settings`.
+- Si le code est bon, le serveur pose un **cookie signé** (`pc_session`, JWT HS256 via `jose`) : `httpOnly`, `secure` (en production), `sameSite=lax`, **30 jours**. Le mode administrateur est un second cookie (`pc_admin`), **12 heures**.
+- **Limite d'essais** : 5 codes faux → blocage de 5 minutes, **par adresse IP** (enregistrée seulement sous forme d'empreinte salée, table `pc_login_attempts`). Même règle pour le code administrateur.
+- **Changer le code** (Réglages) fait tomber toutes les autres sessions (numéro de version dans le cookie). Même effet avec « Déconnecter tous les appareils ».
+- **Les données ne passent que par le serveur.** Les 14 tables `pc_*` ont la RLS activée, **aucune politique**, et les droits sont retirés à `anon` et `authenticated` : la clé publique du navigateur ne peut rien lire ni écrire. Le serveur utilise la clé `service_role` (jamais exposée au navigateur). Toutes les entrées sont validées par Zod.
 
-Le service d'e-mail intégré de Supabase est **très limité** (quelques messages par heure, réservé aux tests). Pour de vraies invitations, configure ton propre SMTP : **Project settings → Authentication → SMTP Settings**.
+### Limites de sécurité (à lire)
 
-### 3.5 Mot de passe
-
-**Sign In / Providers → Email** : longueur minimale 10 (le site l'exige aussi côté formulaire).
-
----
-
-## 4. Créer le premier administrateur (Arvy)
-
-1. **Authentication → Users → Add user → Create new user** : ton e-mail + un mot de passe, coche **Auto Confirm User**.
-2. Ouvre [`supabase/promote_admin.sql`](supabase/promote_admin.sql), remplace `REMPLACE-MOI@exemple.com` par ton adresse, colle dans le **SQL Editor** et lance.
-3. Tu te connectes ensuite sur le site ; la première fois, il te demande de compléter ton profil (nom, photo, rôle).
-
-Ensuite, **tout le reste passe par le site** : Membres et rôles → **Inviter un membre**.
+1. **Le code est partagé** : toute personne qui le connaît peut se faire passer pour n'importe quel membre. « Qui es-tu ? » est une déclaration, pas une preuve.
+2. **Si le code fuite**, il suffit de le changer (Réglages) : toutes les sessions sont coupées.
+3. **Le journal d'activité** reflète l'identité _déclarée_, pas vérifiée.
+4. La limite d'essais freine les essais au hasard ; elle n'arrête pas un attaquant déterminé qui change d'adresse IP. Choisis un code assez long.
+5. **N'enregistre aucune donnée sensible** : pas de téléphone, d'e-mail personnel, ni de pièce d'identité.
 
 ---
 
-## 5. Lancer en local
+## 2. Variables d'environnement
+
+| Variable                        | Rôle                                                                                                                | Secrète ? |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------- | --------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Adresse du projet Supabase                                                                                          | non       |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Clé publique. Sert **uniquement** à envoyer un fichier vers une URL signée par le serveur. Ne lit **aucune** table. | non       |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Lit et écrit les données — **serveur uniquement**                                                                   | **oui**   |
+| `ACCESS_CODE`                   | Code d'accès commun (modifiable ensuite dans Réglages)                                                              | **oui**   |
+| `ADMIN_CODE`                    | Code du mode administrateur, connu du seul ambassadeur                                                              | **oui**   |
+| `SESSION_SECRET`                | Signe les cookies (≥ 32 caractères, aléatoire)                                                                      | **oui**   |
+
+Générer un secret : `openssl rand -base64 48`.
+
+> ⚠️ Les variables `NEXT_PUBLIC_*` sont **figées au moment du build** : après les avoir changées, il faut **redéployer** (rebuild). Les autres sont lues au démarrage.
+> Tant qu'il manque une variable, la page d'entrée affiche la **liste des variables manquantes** (noms seulement) au lieu de planter.
+
+`.env.local` (non versionné) contient des **valeurs de développement** pour le faux backend local. N'utilise jamais ces valeurs en production.
+
+---
+
+## 3. Base de données (Supabase)
+
+Les migrations sont dans `supabase/migrations/` (à rejouer dans l'ordre, sur un projet vierge) :
+
+| Fichier                        | Contenu                                                                                                                                                                                   |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `20261111000001_pc_schema.sql` | 14 tables `pc_*`, types énumérés, index, triggers (`updated_at`, `fait_le`, journal d'activité), RLS sans politique, droits retirés à `anon`/`authenticated`, bucket privé `pc-livrables` |
+| `20261111000002_pc_seed.sql`   | Les 6 modèles de rôles, le guide, les projets, la frise. **Aucun membre, tâche ni post.**                                                                                                 |
+
+Tables : `pc_members`, `pc_roles`, `pc_member_roles`, `pc_tasks`, `pc_task_deliverables`, `pc_nudges`, `pc_posts`, `pc_activity`, `pc_guide_sections`, `pc_projects`, `pc_milestones`, `pc_settings`, plus `pc_login_attempts` (limite d'essais) et `pc_feature_interests` (bouton « Me prévenir » des pages Bientôt).
+
+**Appliquer** : Supabase → _SQL Editor_ → coller chaque fichier, dans l'ordre. (Le projet utilisé par ce dépôt est « forge afri'k » ; les migrations n'ont créé que des tables `pc_*` et ne touchent à rien d'autre.)
+
+**Vérifier que la clé publique ne lit rien** (appel réel à l'API) :
 
 ```bash
-git clone https://github.com/Arvy10/forge-afri-k.git
-cd forge-afri-k
+./scripts/check-public-key.sh https://xxxx.supabase.co <clé publique>
+```
+
+Chaque ligne doit afficher `HTTP 401/403` (ou une liste vide), jamais de données.
+
+---
+
+## 4. Première utilisation
+
+**Administrateur (Arvy)**
+
+1. Ouvre le site, tape le **code d'accès**.
+2. Sur « Qui es-tu ? » (vide), touche **« Je suis l'administrateur »** et saisis le **code administrateur**.
+3. Page **Équipe → Ajouter des membres** : tape un prénom, Entrée, le suivant… puis « Ajouter ». (« Marie Dupont » → prénom + nom.)
+4. Ouvre la fiche d'une personne pour choisir sa **couleur** et ses **rôles**, puis **ajoute ses tâches** (bouton « Ajouter une tâche »).
+5. Choisis ensuite qui tu es (menu → « Ce n'est pas moi, changer ») pour avoir ton propre espace.
+
+**Un membre**
+
+1. Ouvre le site, tape le code d'accès, touche son prénom → **Mon espace**.
+2. **Coche** ses tâches d'un geste ; **dépose un livrable** (fichier depuis le téléphone, ou lien Drive/WeTransfer pour les vidéos lourdes — 50 Mo maximum par fichier).
+3. Dans **Équipe**, il voit l'avancement de chacun et peut **relancer** : la relance apparaît dans l'espace de la personne, et un **message prêt à copier** est proposé pour WhatsApp (aucun envoi automatique).
+
+**Règles par défaut** (réglables dans _Réglages_) : tout le monde voit tout ; chacun coche ses propres tâches et dépose ses livrables ; **tout membre peut ajouter une tâche à n'importe qui** (l'admin peut le réserver à lui seul) ; seuls l'admin supprime, réassigne et change les rôles.
+
+**Calendrier** : vide au départ. L'admin peut **importer un CSV** (modèle téléchargeable, aperçu et erreurs avant enregistrement) ou **exporter** le calendrier. Règles automatiques : type selon le jour (lundi Impact … vendredi Appel à l'action), préparation 2 jours avant (le dimanche pour le lundi), publication à 8h00.
+
+---
+
+## 5. Développement local
+
+```bash
 npm install
-cp .env.example .env.local     # puis remplis les 4 variables
-npm run dev                    # http://localhost:3000
+npm run dev               # http://localhost:3000  (variables dans .env.local)
+npm run typecheck && npm run lint && npm test
 ```
 
-Variables (`.env.local`) :
-
-| Variable                        | Rôle                                                   | Secrète ? |
-| ------------------------------- | ------------------------------------------------------ | --------- |
-| `NEXT_PUBLIC_SUPABASE_URL`      | URL du projet Supabase                                 | non       |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | clé publique (la RLS protège les données)              | non       |
-| `SUPABASE_SERVICE_ROLE_KEY`     | inviter / bloquer des comptes — **serveur uniquement** | **oui**   |
-| `NEXT_PUBLIC_SITE_URL`          | adresse publique du site, sans `/` final               | non       |
-
-> ⚠️ Les variables `NEXT_PUBLIC_*` sont **intégrées au code au moment du build** : si tu les changes, il faut refaire `npm run build`.
-> La clé `service_role` n'est jamais préfixée par `NEXT_PUBLIC_` et n'est lue que par `src/lib/supabase/admin.ts` (marqué `server-only`).
-
-### Vérifications
+**Tester sans compte Supabase** : `scripts/local-backend/server.mjs` est un faux Supabase (API de données branchée sur un vrai Postgres avec les vraies migrations, et stockage de fichiers en mémoire). Il ne sert qu'au développement.
 
 ```bash
-npm run typecheck     # TypeScript strict
-npm run lint          # ESLint
-npm test              # dates, rythme, CSV, contraste AA, redirections
+createdb pc_dev && psql pc_dev -f tests/rls/supabase_stub.sql \
+  -f supabase/migrations/20261111000001_pc_schema.sql -f supabase/migrations/20261111000002_pc_seed.sql
+DATABASE_URL=postgres://localhost/pc_dev npm run dev:local-backend
 ```
 
-**Tests des règles de sécurité (RLS)** — ils tournent sur un vrai Postgres (jamais sur ta base Supabase) :
+**Tests** : dates et rythme, progression de la semaine, message de relance, journal d'activité, filtres, CSV, contraste AA, **jetons de session** (signature, expiration, falsification), **limite d'essais**, **accès refusé sans cookie valide**. Les tests de **base de données** (RLS, triggers, contraintes) tournent sur un Postgres de test :
 
 ```bash
-createdb rls_test
-RLS_TEST_DATABASE_URL=postgres://postgres@localhost:5432/rls_test npm test
+createdb pc_test
+RLS_TEST_DATABASE_URL=postgres://localhost/pc_test npm test
 ```
-
-Ils vérifient notamment : un visiteur ne lit rien ; un membre ne modifie que ses posts et tâches ; il ne peut ni se promouvoir admin ni changer d'e-mail ; un membre désactivé ne voit plus rien ; seul l'admin modifie règles et projets.
-
-### Tester l'interface sans compte Supabase (facultatif)
-
-`scripts/local-backend/` contient un faux Supabase local (connexion + API de données branchée sur un vrai Postgres, **avec la vraie RLS**). Il sert uniquement au développement ; voir l'en-tête de `server.mjs`. Les photos et pièces jointes (Storage) n'y sont pas simulées.
 
 ---
 
-## 6. Ce que fait le site
+## 6. Déployer sur Hostinger
 
-- **Accueil** : la semaine en cours, prochain post avec compte à rebours jusqu'à 8h00, mes tâches (case à cocher), posts à préparer aujourd'hui/demain, équipe, jalons.
-- **Calendrier** : vues Semaine (glisser-déposer sur ordinateur), Mois, Liste groupée par semaine ; filtres ; fiche d'un post (historique des statuts, commentaires, pièces jointes, tâches liées) ; **export CSV** et **import CSV** (admin).
-- **Membres et rôles** : fiches, rôles (avec rôles « sans titulaire »), invitation, désactivation.
-- **Tâches** : Kanban et liste, filtre « Mes tâches » par défaut, création en une ligne, charge de l'équipe (admin).
-- **Règles et guide** / **Projets Forge Afri'K** : lecture pour tous, modification par l'admin.
-- **Bibliothèque, Réunions, Résultats** : pages « Bientôt » avec bouton « Me prévenir ».
+**Il faut un hébergement Node.js** (les routes serveur et la vérification du code en ont besoin). D'après la documentation Hostinger : **Business ou Cloud** (application Node.js) ou **VPS**. Les offres d'entrée de gamme (Single / Premium) ne font pas tourner Next.js.
 
-**Règles automatiques** : type par défaut selon le jour (lundi Impact … vendredi Appel à l'action), préparation 2 jours avant (le dimanche pour un post du lundi), heure 08:00, signal orange si la préparation est dépassée et le statut encore « À faire ».
+1. hPanel → _Sites web → Ajouter → Applications Web Node.js_ → dépôt GitHub, branche **`main`**.
+2. Réglages : framework **Next.js**, **Node 22**, build `npm run build`, démarrage `npm start`.
+3. **Variables d'environnement** (§2) : les **6**, avant le build.
+4. Déploie. Ouvre le site : tu dois voir l'écran du code d'accès. S'il liste des variables manquantes, ajoute-les puis **redéploie**.
+5. Ajoute ton domaine + le certificat SSL.
 
-### Importer le calendrier Excel (18 posts)
+Le script de build utilise `next build --webpack` : le compilateur par défaut (Turbopack) ne démarre pas son sous-processus PostCSS sur le serveur de build d'Hostinger. Vérifié sur une installation vierge, en mode production, avec 768 Mo de mémoire.
 
-1. Excel → **Fichier → Enregistrer sous → CSV (séparateur : point-virgule)**.
-2. Sur le site : Calendrier → **Importer un CSV**. La première ligne doit contenir les titres de colonnes (au minimum `Date`). Les noms utilisés par l'export sont reconnus : `Date`, `Type de contenu`, `Canal principal`, `Autres canaux`, `Format`, `Idée / scénario`, `À préparer / filmer le`, `Heure de publication`, `Légende (copywriting)`, `Responsable`, `Statut`, `Lien du post`.
-3. Le site **vérifie d'abord** et liste les lignes à corriger ; rien n'est ajouté tant que tu ne confirmes pas. Les numéros sont attribués automatiquement. Un responsable est reconnu par son nom ou son e-mail.
+**Mises à jour** : pousse sur `main`, redéploie. **Changer un code** : `ADMIN_CODE` et `SESSION_SECRET` se changent dans les variables (puis redémarrage) ; le **code d'accès** se change dans _Réglages_ (sans redéployer).
 
 ---
 
-## 7. Sécurité en bref
+## 7. Ce que contient le site
 
-- Site privé : aucune page ni donnée sans connexion (`src/proxy.ts` + RLS sur **toutes** les tables).
-- Pas d'inscription publique ; invitations par l'admin uniquement.
-- Admin : tout. Membre : lit tout, modifie ses posts/tâches/profil/commentaires. Un trigger empêche un membre de changer son niveau d'accès.
-- Toutes les entrées sont validées côté serveur avec Zod (mêmes schémas que les formulaires).
-- Fichiers : espaces de stockage **privés**, accès par liens signés temporaires (1 h).
-- En-têtes de sécurité et `noindex` sur tout le site.
-- Aucun secret dans le dépôt ; `.env*` est ignoré par git.
+- **Accueil** : bandeau, la semaine du calendrier, avancement de l'équipe, mes tâches, dernières activités, à préparer bientôt, prochain post, projets à venir.
+- **Mon espace** : progression de la semaine, tâches regroupées (En retard · Cette semaine · Plus tard · Faites), grande case à cocher, livrables, relances reçues.
+- **Équipe** : une carte par membre avec sa barre de progression et le signal de retard ; fiche en lecture ; relance ; (admin) ajout rapide, couleur, rôles, activation.
+- **Toutes les tâches** : cartes sur mobile, **tableau triable** sur ordinateur, ou Kanban ; filtres par membre, statut, échéance.
+- **Calendrier** : semaine, mois, liste (cartes sur mobile, tableau sur ordinateur).
+- **Règles et guide**, **Projets Forge Afri'K** (modifiables en mode administrateur), pages **Bientôt** (Bibliothèque, Réunions, Résultats).
+- **Réglages** (admin) : qui peut ajouter des tâches, code d'accès, modèles de rôles.
 
----
+Les écrans se **rafraîchissent seuls** (toutes les 30 secondes et au retour sur l'onglet). Les cases à cocher et les statuts réagissent immédiatement, avec retour en arrière si le serveur refuse.
 
-## 8. Déployer sur Hostinger
+## 8. Limites connues
 
-### Quelle offre ?
+- Pas de photo de profil (pastille colorée avec l'initiale).
+- Pas de commentaires ni de pièces jointes sur les posts du calendrier (hors du périmètre V2) ; les livrables sont rattachés aux **tâches**.
+- Pas de notification automatique : la relance fournit un message à copier.
+- Les jalons de la frise (Projets) se modifient en base.
+- Fichiers : 50 Mo maximum (limite de l'offre gratuite Supabase) ; au-delà, coller un lien.
+- L'adresse IP vient de l'en-tête `x-forwarded-for` du proxy de l'hébergeur.
 
-D'après la documentation Hostinger : **Next.js tourne sur les offres « Business Web Hosting » et « Cloud » (Startup, Professional, Enterprise), via « Node.js Web App ». Un VPS convient aussi**, avec une installation manuelle. Les offres d'hébergement web d'entrée de gamme (Single / Premium) **ne font pas tourner Next.js** (pas de Node.js) : il faudrait passer à Business ou à un VPS. Vérifie les offres actuelles sur hostinger.com avant d'acheter.
-
-> Je n'ai pas pu tester le déploiement sur un compte Hostinger réel : les noms exacts des menus hPanel peuvent avoir changé. Les paramètres à saisir (Node 22, `npm run build`, `npm start`, variables) restent les mêmes.
-
-### Ce qui a été vérifié pour l'hébergement
-
-Simulation d'un serveur vierge : `npm ci` en mode production (sans dépendances de développement), puis `npm run build` **sans aucune variable d'environnement**, puis `npm start` — tout passe. Sans variables, le site répond « Configuration Supabase manquante » au lieu de planter ; avec elles, un visiteur non connecté est renvoyé vers `/connexion` sur toutes les pages privées. Les dépendances nécessaires au build (Tailwind, PostCSS, TypeScript) sont dans `dependencies`, et `.nvmrc` indique Node 22.
-
-> **Si le build échoue chez Hostinger avec « Turbopack … node process exited »** : c'est le sous-processus PostCSS de Turbopack qui ne démarre pas sur leur serveur. Le script `build` utilise donc `next build --webpack` (compilateur classique), vérifié sur une installation vierge avec 768 Mo de mémoire.
-
-### Option A — Hostinger Business ou Cloud (application Node.js)
-
-1. **Dépôt** : le code est sur GitHub (`Arvy10/forge-afri-k`). Tu peux aussi envoyer un ZIP.
-2. hPanel → **Sites web → Ajouter un site web → Applications Web Node.js** → **Importer un dépôt GitHub** (autorise l'accès) → choisis le dépôt et la branche `main`.
-3. Réglages :
-   - **Framework** : Next.js
-   - **Version de Node.js** : 22
-   - **Commande de build** : `npm run build`
-   - **Commande de démarrage** : `npm start`
-4. **Variables d'environnement** — à renseigner **avant** le premier build (les `NEXT_PUBLIC_*` sont figées au build) :
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=…
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=…
-   SUPABASE_SERVICE_ROLE_KEY=…
-   NEXT_PUBLIC_SITE_URL=https://ton-domaine
-   ```
-5. Lance le déploiement. Hostinger fournit le port via la variable `PORT` (Next.js la respecte).
-6. **Domaine + HTTPS** : associe ton domaine / sous-domaine ; active le certificat SSL gratuit.
-7. Retourne dans Supabase (§3.2) et mets l'URL définitive dans **Site URL** et **Redirect URLs**.
-8. **Mises à jour** : pousse sur la branche → redéploie depuis hPanel (ou active le déploiement automatique).
-
-Si le build échoue faute de mémoire, construis en local (`npm run build`) et envoie le projet (dossiers `.next`, `public`, `package.json`, `package-lock.json`, `next.config.ts`) par ZIP, puis lance `npm ci --omit=dev` et `npm start` depuis le terminal de l'hébergement.
-
-### Option B — VPS Hostinger (Ubuntu)
-
-```bash
-# 1. Node 22, git, nginx, pm2
-curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-sudo apt-get install -y nodejs git nginx
-sudo npm install -g pm2
-
-# 2. Code + variables
-git clone https://github.com/Arvy10/forge-afri-k.git /var/www/forge-afrik
-cd /var/www/forge-afrik
-cp .env.example .env.local && nano .env.local     # remplis les 4 variables
-npm ci && npm run build
-
-# 3. Lancement permanent
-pm2 start npm --name forge-afrik -- start        # écoute sur le port 3000
-pm2 save && pm2 startup
-```
-
-Nginx (`/etc/nginx/sites-available/forge-afrik`) :
-
-```nginx
-server {
-  server_name pole-com.forgeafrik.org;
-  location / {
-    proxy_pass http://127.0.0.1:3000;
-    proxy_set_header Host $host;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-  }
-}
-```
-
-```bash
-sudo ln -s /etc/nginx/sites-available/forge-afrik /etc/nginx/sites-enabled/
-sudo nginx -t && sudo systemctl reload nginx
-sudo apt-get install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d pole-com.forgeafrik.org   # HTTPS gratuit
-```
-
-Mise à jour : `cd /var/www/forge-afrik && git pull && npm ci && npm run build && pm2 restart forge-afrik`.
-
----
-
-## 9. Après la mise en ligne
-
-- [ ] Je me connecte (admin) et je vois l'Accueil.
-- [ ] J'invite un membre ; il reçoit l'e-mail, choisit son mot de passe, complète son profil.
-- [ ] J'ajoute un post et je le vois en semaine, mois et liste.
-- [ ] Un visiteur non connecté est renvoyé vers la page de connexion.
-- [ ] Sauvegardes : activées dans Supabase (offre Pro) ou export régulier du calendrier en CSV.
-
-## Identité visuelle
-
-- **Logo** : fichiers dans `public/brand/` (`logo.webp`, `logo-pole.webp`, `mark.webp`), extraits du visuel fourni ; favicon dans `src/app/icon.png`. Pour le remplacer, garde les mêmes noms de fichiers.
-- **Thème** : le site est **clair par défaut**, quel que soit le réglage de l'appareil. Le mode sombre se choisit avec l'interrupteur (le choix est mémorisé).
-- **Animations** : apparition échelonnée des blocs, soulèvement des cartes au survol, panneaux qui glissent, engrenage qui tourne lentement (accueil), compte à rebours « en direct ». Elles sont toutes coupées si l'appareil demande de réduire les animations.
-
-## 10. Limites connues
-
-- Le logo vient d'une image JPEG fournie (fond retiré automatiquement) : si tu as le fichier d'origine en SVG ou PNG transparent, il sera plus net.
-- Les rappels « Me prévenir quand c'est prêt » enregistrent seulement l'intérêt (pas de notification).
-- Les jalons de la frise (Projets) se modifient en base ; les projets et le guide se modifient depuis le site.
-- Taille maximale d'une pièce jointe : 50 Mo (limite de l'offre gratuite Supabase).
-- Les cartes d'un post ne se glissent pas au doigt sur mobile (le changement de jour se fait dans la fiche) ; le glisser-déposer est prévu pour l'ordinateur.
-
-## 11. Arborescence
+## 9. Arborescence
 
 ```
-supabase/            migration, seed, promotion admin
-src/proxy.ts         protège toutes les pages (session Supabase)
-src/app/(auth)/      connexion, mot de passe, profil à compléter
-src/app/(app)/       accueil, calendrier, membres, tâches, règles, projets, « Bientôt »
-src/actions/         Server Actions (validation Zod, droits)
-src/components/      ui · layout · calendar · tasks · members · home · guide · projects
-src/lib/             dates & rythme, CSV, schémas Zod, accès Supabase
-tests/               dates, CSV, paramètres, contraste AA, RLS (Postgres)
-scripts/local-backend faux Supabase local (développement uniquement)
+supabase/migrations/   schéma pc_* et textes réels
+src/proxy.ts           premier filtre : cookie signé obligatoire (sauf /acces)
+src/server/            session, jetons, code d'accès, limite d'essais, accès base, chargements
+src/actions/           Server Actions (validation Zod, droits)
+src/app/(entree)/      /acces et /qui-es-tu
+src/app/(app)/         accueil, mon-espace, equipe, taches, calendrier, regles, projets, reglages, Bientôt
+src/components/        ui · layout · tasks · team · calendar · home · access · settings
+src/lib/               dates, progression, relance, CSV, schémas Zod
+tests/                 unitaires, sécurité, RLS (Postgres)
+scripts/               check-public-key.sh, faux Supabase local
 ```

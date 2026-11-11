@@ -45,3 +45,16 @@
 - Solution : animer `scale` / `opacity` seulement dans les keyframes des boîtes centrées.
 - Autre piège : une animation avec `fill-mode: both` laisse un `transform` qui piège les éléments `position: fixed` enfants ; utiliser `backwards` et finir à `transform: none`.
 - Date : 2026-11-10 | Statut : confirmée
+
+### Next.js : un fichier "use server" ne peut exporter que des fonctions async
+
+- Symptôme : « A "use server" file can only export async functions, found number » (ex. `export const MAX_FILE_BYTES`).
+- Solution : constante non exportée, ou fichier séparé hors `actions/`.
+- Date : 2026-11-11 | Projet : Forge Afri'K V2 | Statut : confirmée
+
+### Accès par code commun sans comptes (Next.js + Supabase)
+
+- Modèle : RLS activée + AUCUNE politique + `revoke all … from anon, authenticated` ; tout passe par le serveur avec `service_role` ; cookie JWT (jose) httpOnly signé ; version du code dans le JWT pour tout invalider ; limite d'essais en base (table), clé = empreinte salée de l'IP.
+- Piège : `proxy.ts` ne peut pas interroger la base à chaque requête → il vérifie la signature ; la version du code est vérifiée côté serveur (`getAuth`).
+- Piège : `git rm` d'un dossier entier échoue sans `-r` et annule toute la commande (rien n'est supprimé).
+- Statut : confirmée (tests unitaires + parcours Playwright).

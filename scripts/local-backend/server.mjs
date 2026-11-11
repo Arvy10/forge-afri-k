@@ -1,76 +1,38 @@
 /**
- * Faux Supabase local — UNIQUEMENT pour tester l'interface sans compte Supabase.
+ * Faux Supabase local — UNIQUEMENT pour tester le site sans compte Supabase.
  *
- * - /auth/v1/*  : connexion par mot de passe (tous les comptes de démo : « motdepasse-demo »)
- * - /rest/v1/*  : traduit les requêtes de supabase-js en SQL sur un vrai Postgres,
- *                 en se plaçant dans le rôle « authenticated » → la vraie RLS s'applique.
- * - /storage/v1/*: non fourni (les images/pièces jointes n'apparaissent pas en local).
+ * - /rest/v1/*     : traduit les requêtes de supabase-js en SQL sur un vrai Postgres.
+ *                    Seule la clé « service_role » de démo est acceptée (comme le site le fait côté serveur) ;
+ *                    toute autre clé (ex. la clé publique) agit comme « anon » : aucun droit sur les tables pc_*.
+ * - /storage/v1/*  : envoi par URL signée et liens signés, en mémoire (pour tester les livrables).
  *
  * Usage : DATABASE_URL=postgres://… node scripts/local-backend/server.mjs
- * Ne jamais utiliser en production.
+ * Ne jamais utiliser en production. Aucune donnée d'exemple n'est fournie.
  */
-import { createHmac, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import http from "node:http";
 import pg from "pg";
 
 const PORT = Number(process.env.PORT ?? 54321);
-const SECRET = process.env.JWT_SECRET ?? "local-demo-secret-not-for-production-use";
-const PASSWORD = "motdepasse-demo";
 const SERVICE_KEY = "demo-service-role-key";
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 
-const b64 = (o) => Buffer.from(typeof o === "string" ? o : JSON.stringify(o)).toString("base64url");
-const sign = (payload) => {
-  const head = b64({ alg: "HS256", typ: "JWT" });
-  const body = b64(payload);
-  const sig = createHmac("sha256", SECRET).update(`${head}.${body}`).digest("base64url");
-  return `${head}.${body}.${sig}`;
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "*",
+  "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
 };
-function verify(token) {
-  const [h, b, s] = token.split(".");
-  if (!h || !b || !s) return null;
-  const ok = createHmac("sha256", SECRET).update(`${h}.${b}`).digest("base64url") === s;
-  if (!ok) return null;
-  const claims = JSON.parse(Buffer.from(b, "base64url").toString());
-  return claims.exp && claims.exp < Date.now() / 1000 ? null : claims;
-}
-const userJson = (u) => ({
-  id: u.id,
-  aud: "authenticated",
-  role: "authenticated",
-  email: u.email,
-  app_metadata: { provider: "email" },
-  user_metadata: u.raw_user_meta_data ?? {},
-  created_at: new Date().toISOString(),
-});
-function session(u) {
-  const exp = Math.floor(Date.now() / 1000) + 3600;
-  return {
-    access_token: sign({
-      sub: u.id,
-      role: "authenticated",
-      aud: "authenticated",
-      email: u.email,
-      exp,
-    }),
-    token_type: "bearer",
-    expires_in: 3600,
-    expires_at: exp,
-    refresh_token: `r.${u.id}`,
-    user: userJson(u),
-  };
-}
-
 const send = (res, status, body, headers = {}) => {
-  res.writeHead(status, { "Content-Type": "application/json", ...headers });
+  res.writeHead(status, { "Content-Type": "application/json", ...CORS, ...headers });
   res.end(body === undefined ? undefined : JSON.stringify(body));
 };
-const readBody = (req) =>
+const readRaw = (req) =>
   new Promise((resolve) => {
     const chunks = [];
     req.on("data", (c) => chunks.push(c));
-    req.on("end", () => resolve(Buffer.concat(chunks).toString()));
+    req.on("end", () => resolve(Buffer.concat(chunks)));
   });
+const readBody = async (req) => (await readRaw(req)).toString();
 
 /* ----------------------------- REST → SQL ----------------------------- */
 const IDENT = /^[a-z_][a-z0-9_]*$/;
@@ -92,8 +54,8 @@ const OPS = {
 
 function splitTop(s) {
   const out = [];
-  let depth = 0,
-    cur = "";
+  let depth = 0;
+  let cur = "";
   for (const ch of s) {
     if (ch === "(" || ch === "{") depth++;
     if (ch === ")" || ch === "}") depth--;
@@ -108,9 +70,9 @@ function splitTop(s) {
 
 function condition(col, spec, params, pre = "") {
   const dot = spec.indexOf(".");
-  const Q = (c) => pre + q(c);
   const op = spec.slice(0, dot);
   const val = spec.slice(dot + 1);
+  const Q = (c) => pre + q(c);
   if (op === "is")
     return `${Q(col)} is ${val === "null" ? "null" : val === "true" ? "true" : "false"}`;
   if (op === "in") {
@@ -174,10 +136,10 @@ const colsFrom = (url, pre = "") => {
 
 async function rest(req, res, url) {
   const table = url.pathname.replace("/rest/v1/", "");
-  const auth = req.headers.authorization?.replace(/^Bearer /, "");
-  const isService = auth === SERVICE_KEY; // clé service_role de démo : contourne la RLS
-  const claims = auth && !isService ? verify(auth) : null;
-  const role = isService ? "postgres" : claims ? "authenticated" : "anon";
+  const bearer = (req.headers.authorization ?? "").replace(/^Bearer /, "");
+  const apikey = req.headers.apikey ?? "";
+  const isService = bearer === SERVICE_KEY || apikey === SERVICE_KEY;
+  const role = isService ? "postgres" : "anon";
   const wantObject = (req.headers.accept ?? "").includes("vnd.pgrst.object");
   const prefer = req.headers.prefer ?? "";
   const returning = prefer.includes("return=representation");
@@ -205,14 +167,11 @@ async function rest(req, res, url) {
     const keys = [...new Set(rows.flatMap((r) => Object.keys(r)))];
     params.push(JSON.stringify(rows));
     const conflict = url.searchParams.get("on_conflict");
+    const conflictCols = conflict ? conflict.split(",") : [];
+    const updates = keys.filter((k) => !conflictCols.includes(k));
     const upsert =
       prefer.includes("resolution=merge-duplicates") && conflict
-        ? ` on conflict (${conflict.split(",").map(q).join(",")}) do update set ${
-            keys
-              .filter((k) => !conflict.split(",").includes(k))
-              .map((k) => `${q(k)} = excluded.${q(k)}`)
-              .join(", ") || `${q(keys[0])} = excluded.${q(keys[0])}`
-          }`
+        ? ` on conflict (${conflictCols.map(q).join(",")}) do update set ${updates.map((k) => `${q(k)} = excluded.${q(k)}`).join(", ") || `${q(keys[0])} = excluded.${q(keys[0])}`}`
         : "";
     const ins = `insert into ${t} (${keys.map(q).join(",")}) select ${keys.map(q).join(",")} from json_populate_recordset(null::${t}, $1::json)${upsert}`;
     sql = returning ? wrapDml(ins + returnClause) : `${ins} returning 1`;
@@ -231,9 +190,6 @@ async function rest(req, res, url) {
   try {
     await client.query("begin");
     await client.query(`set local role ${role}`);
-    await client.query("select set_config('request.jwt.claims', $1, true)", [
-      JSON.stringify(claims ?? {}),
-    ]);
     const out = await client.query(sql, params);
     await client.query("commit");
     if (req.method === "GET" || returning) {
@@ -254,7 +210,7 @@ async function rest(req, res, url) {
   } catch (e) {
     await client.query("rollback").catch(() => {});
     console.error(`[rest ${req.method} ${table}]`, e.message);
-    const status = e.code === "42501" ? (claims ? 403 : 401) : e.code === "23505" ? 409 : 400;
+    const status = e.code === "42501" ? 401 : e.code === "23505" ? 409 : 400;
     return send(res, status, {
       code: e.code ?? "PGRST000",
       message: e.message,
@@ -266,85 +222,63 @@ async function rest(req, res, url) {
   }
 }
 
-/* ----------------------------- Auth ----------------------------- */
-async function authRoute(req, res, url) {
-  const path = url.pathname.replace("/auth/v1", "");
-  if (path === "/token" && req.method === "POST") {
-    const body = JSON.parse((await readBody(req)) || "{}");
-    const grant = url.searchParams.get("grant_type");
-    if (grant === "password") {
-      const { rows } = await pool.query(
-        "select id, email, raw_user_meta_data from auth.users where lower(email) = lower($1)",
-        [body.email ?? ""],
-      );
-      if (!rows[0] || body.password !== PASSWORD)
-        return send(res, 400, {
-          code: 400,
-          error_code: "invalid_credentials",
-          msg: "Invalid login credentials",
-        });
-      return send(res, 200, session(rows[0]));
-    }
-    if (grant === "refresh_token") {
-      const id = String(body.refresh_token ?? "").replace(/^r\./, "");
-      const { rows } = await pool.query(
-        "select id, email, raw_user_meta_data from auth.users where id::text = $1",
-        [id],
-      );
-      if (!rows[0])
-        return send(res, 400, {
-          code: 400,
-          error_code: "refresh_token_not_found",
-          msg: "Invalid Refresh Token",
-        });
-      return send(res, 200, session(rows[0]));
-    }
+/* ----------------------------- Storage (en mémoire) ----------------------------- */
+const files = new Map(); // "bucket/chemin" -> Buffer
+
+async function storage(req, res, url) {
+  const path = url.pathname.replace("/storage/v1", "");
+  // Signature d'un envoi : POST /object/upload/sign/{bucket}/{chemin}
+  let m = /^\/object\/upload\/sign\/([^/]+)\/(.+)$/.exec(path);
+  if (m && req.method === "POST")
+    return send(res, 200, { url: `/object/upload/sign/${m[1]}/${m[2]}?token=tok-${randomUUID()}` });
+  // Envoi : PUT /object/upload/sign/{bucket}/{chemin}?token=
+  if (m && req.method === "PUT") {
+    if (!url.searchParams.get("token")) return send(res, 400, { message: "token manquant" });
+    files.set(`${m[1]}/${decodeURIComponent(m[2])}`, await readRaw(req));
+    return send(res, 200, { Key: `${m[1]}/${m[2]}` });
   }
-  if (path === "/user" && req.method === "GET") {
-    const claims = verify(req.headers.authorization?.replace(/^Bearer /, "") ?? "");
-    if (!claims) return send(res, 401, { code: 401, error_code: "bad_jwt", msg: "invalid JWT" });
-    const { rows } = await pool.query(
-      "select id, email, raw_user_meta_data from auth.users where id::text = $1",
-      [claims.sub],
+  // Liens signés : POST /object/sign/{bucket}  { paths, expiresIn }
+  m = /^\/object\/sign\/([^/]+)$/.exec(path);
+  if (m && req.method === "POST") {
+    const { paths = [] } = JSON.parse((await readBody(req)) || "{}");
+    return send(
+      res,
+      200,
+      paths.map((p) => ({
+        path: p,
+        signedURL: `/object/sign/${m[1]}/${p}?token=tok-${randomUUID()}`,
+        error: null,
+      })),
     );
-    return rows[0]
-      ? send(res, 200, userJson(rows[0]))
-      : send(res, 401, { code: 401, msg: "user not found" });
   }
-  if (path === "/invite" && req.method === "POST") {
-    if (req.headers.authorization !== `Bearer ${SERVICE_KEY}` && req.headers.apikey !== SERVICE_KEY)
-      return send(res, 401, { msg: "service_role requis" });
-    const body = JSON.parse((await readBody(req)) || "{}");
-    const { rows: existing } = await pool.query(
-      "select 1 from auth.users where lower(email) = lower($1)",
-      [body.email],
-    );
-    if (existing[0])
-      return send(res, 422, {
-        code: 422,
-        error_code: "email_exists",
-        msg: "A user with this email address has already been registered",
-      });
-    const { rows } = await pool.query(
-      "insert into auth.users (email, raw_user_meta_data) values ($1, $2) returning id, email, raw_user_meta_data",
-      [body.email, body.data ?? {}],
-    );
-    console.log(`[invite] ${body.email}`);
-    return send(res, 200, userJson(rows[0]));
+  // Téléchargement d'un lien signé
+  m = /^\/object\/sign\/([^/]+)\/(.+)$/.exec(path);
+  if (m && req.method === "GET") {
+    const f = files.get(`${m[1]}/${decodeURIComponent(m[2])}`);
+    if (!f) return send(res, 404, { message: "Fichier introuvable" });
+    res.writeHead(200, { "Content-Type": "application/octet-stream", ...CORS });
+    return res.end(f);
   }
-  if (path.startsWith("/admin/users/") && req.method === "PUT") return send(res, 200, {});
-  if (path === "/logout") return send(res, 204);
-  if (path === "/recover") return send(res, 200, {});
-  return send(res, 404, { msg: `Non géré en local : ${path}` });
+  // Suppression : DELETE /object/{bucket}  { prefixes }
+  m = /^\/object\/([^/]+)$/.exec(path);
+  if (m && req.method === "DELETE") {
+    const { prefixes = [] } = JSON.parse((await readBody(req)) || "{}");
+    for (const p of prefixes) files.delete(`${m[1]}/${p}`);
+    return send(res, 200, []);
+  }
+  return send(res, 404, { message: `Non géré en local : ${path}` });
 }
 
 http
   .createServer(async (req, res) => {
+    if (req.method === "OPTIONS") {
+      res.writeHead(204, CORS);
+      return res.end();
+    }
     const url = new URL(req.url, `http://${req.headers.host}`);
     try {
       if (url.pathname.startsWith("/rest/v1/")) return await rest(req, res, url);
-      if (url.pathname.startsWith("/auth/v1/")) return await authRoute(req, res, url);
-      if (url.pathname.startsWith("/storage/v1/object/sign/")) return send(res, 200, []);
+      if (url.pathname.startsWith("/storage/v1/")) return await storage(req, res, url);
       return send(res, 404, { message: "Non géré par le faux Supabase local" });
     } catch (e) {
       console.error(e);

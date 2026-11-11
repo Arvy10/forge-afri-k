@@ -1,21 +1,35 @@
-import Link from "next/link";
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { ListChecks, Plus } from "lucide-react";
 import { StatusPill } from "@/components/ui/StatusPill";
-import type { PersonLite } from "@/lib/data";
-import type { TaskRow } from "@/lib/database.types";
-import { formatDateShort } from "@/lib/dates";
+import { formatDueLabel } from "@/lib/dates";
+import type { MemberLite } from "@/lib/members";
+import { TaskFormDialog, type TaskFormState } from "@/components/tasks/TaskFormDialog";
+import type { TaskView } from "@/server/tasks";
 
-/** Tâches liées à ce post (créées depuis la page Tâches). */
+/** Tâches liées à ce post ; on peut en ajouter une directement depuis la fiche. */
 export function LinkedTasks({
   postId,
+  postLabel,
   tasks,
-  people,
+  members,
+  me,
+  today,
+  canAdd,
 }: {
   postId: string;
-  tasks: TaskRow[];
-  people: PersonLite[];
+  postLabel: string;
+  tasks: TaskView[];
+  members: MemberLite[];
+  me: { id: string | null; isAdmin: boolean };
+  today: string;
+  canAdd: boolean;
 }) {
-  const byId = new Map(people.map((p) => [p.id, p.name]));
+  const router = useRouter();
+  const [form, setForm] = useState<TaskFormState>(null);
+  const byId = new Map(members.map((m) => [m.id, m.prenom]));
   return (
     <section aria-labelledby="linked-tasks" className="space-y-3">
       <h3 id="linked-tasks" className="font-display flex items-center gap-2 text-base font-bold">
@@ -33,15 +47,10 @@ export function LinkedTasks({
               className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5"
             >
               <div className="min-w-0">
-                <Link
-                  href={`/taches?tache=${t.id}`}
-                  className="text-sm font-medium underline-offset-4 hover:underline"
-                >
-                  {t.titre}
-                </Link>
+                <p className="text-sm font-medium">{t.titre}</p>
                 <p className="text-ink-muted text-xs">
-                  {t.responsable_id ? (byId.get(t.responsable_id) ?? "—") : "Sans responsable"}
-                  {t.echeance ? ` · pour le ${formatDateShort(t.echeance)}` : ""}
+                  {t.member_id ? (byId.get(t.member_id) ?? "—") : "Personne"}
+                  {t.echeance ? ` · ${formatDueLabel(t.echeance, today)}` : ""}
                 </p>
               </div>
               <StatusPill status={t.statut} kind="task" />
@@ -49,13 +58,26 @@ export function LinkedTasks({
           ))}
         </ul>
       )}
-      <Link
-        href={`/taches?nouvelle=${postId}`}
-        className="border-line-strong bg-surface hover:bg-surface-2 inline-flex min-h-11 items-center gap-1.5 rounded-lg border px-3 text-sm font-semibold"
-      >
-        <Plus aria-hidden className="size-4" />
-        Ajouter une tâche
-      </Link>
+      {canAdd && (
+        <button
+          type="button"
+          onClick={() => setForm({ mode: "new", defaultPostId: postId, defaultMemberId: me.id })}
+          className="border-line-strong bg-surface hover:bg-surface-2 inline-flex min-h-12 items-center gap-1.5 rounded-lg border px-4 text-sm font-semibold"
+        >
+          <Plus aria-hidden className="size-4" />
+          Ajouter une tâche
+        </button>
+      )}
+      <TaskFormDialog
+        state={form}
+        onClose={() => {
+          setForm(null);
+          router.refresh();
+        }}
+        members={members.filter((m) => m.actif)}
+        posts={[{ id: postId, label: postLabel }]}
+        me={me}
+      />
     </section>
   );
 }

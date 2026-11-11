@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import {
+  Activity,
   CalendarClock,
   ChevronLeft,
   ChevronRight,
@@ -10,18 +11,17 @@ import {
   Radio,
   Users,
 } from "lucide-react";
+import { WeekBoard } from "@/components/calendar/WeekBoard";
+import { ActivityFeed } from "@/components/home/ActivityFeed";
 import { HeroBanner, HeroStat } from "@/components/home/HeroBanner";
-import { MyTasks } from "@/components/home/MyTasks";
+import { MyTasksList } from "@/components/home/MyTasksList";
 import { NextPostCard } from "@/components/home/NextPostCard";
 import { PrepSoonList } from "@/components/home/PrepSoonList";
 import { Section } from "@/components/home/Section";
-import { TeamStrip } from "@/components/home/TeamStrip";
+import { TeamProgress } from "@/components/home/TeamProgress";
 import { UpcomingProjects } from "@/components/home/UpcomingProjects";
-import { WeekBoard } from "@/components/calendar/WeekBoard";
 import { buttonClass } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { requireMember } from "@/lib/auth";
-import { getRoles, getTeam, toLite } from "@/lib/data";
 import {
   addDaysISO,
   formatDayLong,
@@ -31,8 +31,13 @@ import {
   todayISO,
   workWeekISO,
 } from "@/lib/dates";
-import { fetchPosts } from "@/lib/posts-data";
-import type { MilestoneRow, PostRow, TaskRow } from "@/lib/database.types";
+import type { ActivityRow, MilestoneRow, PostRow, TaskRow } from "@/lib/database.types";
+import { weekProgress, type Progress } from "@/lib/progress";
+import { db } from "@/server/db";
+import { fetchTaskLites } from "@/server/progress";
+import { fetchPosts } from "@/server/posts";
+import { requireSession } from "@/server/session";
+import { getActiveTeam, getTeam } from "@/server/team";
 
 export const metadata: Metadata = { title: "Accueil" };
 
@@ -50,14 +55,13 @@ function greeting(now = new Date()): string {
 }
 
 export default async function HomePage({ searchParams }: { searchParams: SearchParams }) {
-  const { profile, isAdmin } = await requireMember();
+  const auth = await requireSession();
   const sp = await searchParams;
   const today = todayISO();
   const raw = Array.isArray(sp.semaine) ? sp.semaine[0] : sp.semaine;
-  const weekDate = raw && isISODate(raw) ? raw : today;
-  const monday = startOfWeekISO(weekDate);
-  const me = { id: profile.id, isAdmin };
-  const firstName = (profile.full_name || profile.email).split(/[\s@]/)[0]!;
+  const monday = startOfWeekISO(raw && isISODate(raw) ? raw : today);
+  const me = { id: auth.memberId, isAdmin: auth.isAdmin };
+  const firstName = auth.member?.prenom ?? "l'administrateur";
 
   return (
     <>
@@ -67,12 +71,12 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
         dateLabel={`${formatDayLong(today)} ${today.slice(0, 4)}`}
       >
         <Suspense fallback={null}>
-          <HeroStats today={today} monday={startOfWeekISO(today)} />
+          <HeroStats today={today} monday={startOfWeekISO(today)} memberId={auth.memberId} />
         </Suspense>
       </HeroBanner>
 
       {/* 2. Cette semaine */}
-      <section aria-labelledby="cette-semaine" className="mb-6">
+      <section aria-labelledby="cette-semaine" className="mb-7">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 id="cette-semaine" className="font-display text-xl font-bold md:text-2xl">
@@ -84,7 +88,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
             <Link
               href={`/?semaine=${addDaysISO(monday, -7)}`}
               aria-label="Semaine précédente"
-              className="border-line-strong bg-surface hover:bg-surface-2 inline-flex size-11 items-center justify-center rounded-lg border"
+              className="border-line-strong bg-surface hover:bg-surface-2 inline-flex size-12 items-center justify-center rounded-lg border"
             >
               <ChevronLeft aria-hidden className="size-5" />
             </Link>
@@ -94,7 +98,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
             <Link
               href={`/?semaine=${addDaysISO(monday, 7)}`}
               aria-label="Semaine suivante"
-              className="border-line-strong bg-surface hover:bg-surface-2 inline-flex size-11 items-center justify-center rounded-lg border"
+              className="border-line-strong bg-surface hover:bg-surface-2 inline-flex size-12 items-center justify-center rounded-lg border"
             >
               <ChevronRight aria-hidden className="size-5" />
             </Link>
@@ -105,27 +109,38 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
         </Suspense>
       </section>
 
-      <div className="stagger mb-6 grid gap-4 lg:grid-cols-3">
+      {/* 3. Avancement de l'équipe */}
+      <div className="stagger mb-6 grid gap-4 lg:grid-cols-5">
         <Section
-          title="Prochain post"
-          icon={Radio}
-          id="prochain-post"
-          href="/calendrier"
-          hrefLabel="Calendrier"
+          title="Avancement de l'équipe"
+          icon={Users}
+          id="avancement"
+          href="/equipe"
+          hrefLabel="Équipe"
+          className="lg:col-span-3"
         >
-          <Suspense fallback={<Skeleton className="h-64" />}>
-            <NextPost today={today} />
+          <Suspense fallback={<Skeleton className="h-48" />}>
+            <TeamProgressBlock today={today} />
           </Suspense>
         </Section>
         <Section
           title="Mes tâches"
           icon={ListChecks}
           id="mes-taches"
-          href="/taches"
-          hrefLabel="Toutes"
+          href="/mon-espace"
+          hrefLabel="Mon espace"
+          className="lg:col-span-2"
         >
           <Suspense fallback={<Skeleton className="h-48" />}>
-            <MyOpenTasks today={today} />
+            <MyOpenTasks today={today} memberId={auth.memberId} />
+          </Suspense>
+        </Section>
+      </div>
+
+      <div className="stagger mb-6 grid gap-4 lg:grid-cols-3">
+        <Section title="Dernières activités" icon={Activity} id="activites">
+          <Suspense fallback={<Skeleton className="h-48" />}>
+            <RecentActivity />
           </Suspense>
         </Section>
         <Section
@@ -138,20 +153,20 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
             <PrepSoon today={today} />
           </Suspense>
         </Section>
-      </div>
-
-      <div className="stagger grid gap-4 xl:grid-cols-3">
         <Section
-          title="Membres du pôle"
-          icon={Users}
-          id="membres"
-          href="/membres"
-          className="xl:col-span-2"
+          title="Prochain post"
+          icon={Radio}
+          id="prochain-post"
+          href="/calendrier"
+          hrefLabel="Calendrier"
         >
-          <Suspense fallback={<Skeleton className="h-32" />}>
-            <Team />
+          <Suspense fallback={<Skeleton className="h-64" />}>
+            <NextPost today={today} />
           </Suspense>
         </Section>
+      </div>
+
+      <div className="stagger">
         <Section
           title="Projets à venir"
           icon={Flag}
@@ -169,28 +184,39 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
 }
 
 /** Pastilles de chiffres du bandeau : l'essentiel en un coup d'œil. */
-async function HeroStats({ today, monday }: { today: string; monday: string }) {
-  const { supabase, profile } = await requireMember();
+async function HeroStats({
+  today,
+  monday,
+  memberId,
+}: {
+  today: string;
+  monday: string;
+  memberId: string | null;
+}) {
   const tomorrow = addDaysISO(today, 1);
   const [week, prep, tasks] = await Promise.all([
-    supabase
-      .from("posts")
+    db()
+      .from("pc_posts")
       .select("id, statut")
       .gte("date", monday)
       .lte("date", addDaysISO(monday, 6)),
-    supabase
-      .from("posts")
+    db()
+      .from("pc_posts")
       .select("id, prep_date, statut")
       .lte("prep_date", tomorrow)
       .gte("date", today)
       .in("statut", ["a_faire", "en_cours", "pret_a_valider"]),
-    supabase.from("tasks").select("id").eq("responsable_id", profile.id).neq("statut", "valide"),
+    fetchTaskLites(),
   ]);
   const posts = (week.data ?? []) as Pick<PostRow, "id" | "statut">[];
   const published = posts.filter((p) => p.statut === "publie").length;
   const prepCount = ((prep.data ?? []) as Pick<PostRow, "id" | "prep_date" | "statut">[]).filter(
     (p) => p.statut === "a_faire" || (p.prep_date ?? "") >= today,
   ).length;
+  const team = weekProgress(tasks, today);
+  const mine = memberId
+    ? tasks.filter((t) => t.member_id === memberId && t.statut !== "fait").length
+    : null;
   return (
     <>
       <HeroStat
@@ -199,7 +225,15 @@ async function HeroStats({ today, monday }: { today: string; monday: string }) {
         href="/calendrier"
       />
       <HeroStat value={prepCount} label="à préparer d'ici demain" href="#a-preparer" urgent />
-      <HeroStat value={(tasks.data ?? []).length} label="tâches ouvertes pour toi" href="/taches" />
+      <HeroStat
+        value={team.late}
+        label={team.late > 1 ? "tâches en retard dans l'équipe" : "tâche en retard dans l'équipe"}
+        href="/taches?ech=retard"
+        urgent
+      />
+      {mine !== null && (
+        <HeroStat value={mine} label="tâches ouvertes pour toi" href="/mon-espace" />
+      )}
     </>
   );
 }
@@ -210,19 +244,18 @@ async function ThisWeek({
   today,
 }: {
   monday: string;
-  me: { id: string; isAdmin: boolean };
+  me: { id: string | null; isAdmin: boolean };
   today: string;
 }) {
-  const { supabase } = await requireMember();
-  const [posts, team] = await Promise.all([
-    fetchPosts(supabase, { from: monday, to: addDaysISO(monday, 6) }, {}, me.id),
-    getTeam(),
+  const [posts, people] = await Promise.all([
+    fetchPosts({ from: monday, to: addDaysISO(monday, 6) }, {}, me.id),
+    getActiveTeam(),
   ]);
   return (
     <WeekBoard
       days={workWeekISO(monday)}
       posts={posts}
-      people={team.filter((m) => m.active).map(toLite)}
+      people={people}
       me={me}
       today={today}
       query={{ vue: "semaine", date: monday }}
@@ -231,10 +264,64 @@ async function ThisWeek({
   );
 }
 
+async function TeamProgressBlock({ today }: { today: string }) {
+  const [team, tasks] = await Promise.all([getActiveTeam(), fetchTaskLites()]);
+  const byMember = new Map<string, Progress>(
+    team.map((m) => [
+      m.id,
+      weekProgress(
+        tasks.filter((t) => t.member_id === m.id),
+        today,
+      ),
+    ]),
+  );
+  const overall = weekProgress(
+    tasks.filter((t) => team.some((m) => m.id === t.member_id)),
+    today,
+  );
+  return <TeamProgress members={team} byMember={byMember} overall={overall} />;
+}
+
+async function MyOpenTasks({ today, memberId }: { today: string; memberId: string | null }) {
+  if (!memberId)
+    return (
+      <p className="text-ink-muted text-sm">
+        Choisis qui tu es dans{" "}
+        <Link
+          href="/qui-es-tu"
+          className="text-accent-strong font-semibold underline underline-offset-4"
+        >
+          Qui es-tu ?
+        </Link>{" "}
+        pour voir tes tâches.
+      </p>
+    );
+  const { data } = await db()
+    .from("pc_tasks")
+    .select("*")
+    .eq("member_id", memberId)
+    .neq("statut", "fait")
+    .order("echeance", { nullsFirst: false })
+    .limit(6);
+  return <MyTasksList tasks={(data ?? []) as TaskRow[]} today={today} />;
+}
+
+async function RecentActivity() {
+  const [{ data }, team] = await Promise.all([
+    db().from("pc_activity").select("*").order("created_at", { ascending: false }).limit(8),
+    getTeam(),
+  ]);
+  return (
+    <ActivityFeed
+      items={(data ?? []) as ActivityRow[]}
+      names={new Map(team.map((m) => [m.id, m.prenom]))}
+    />
+  );
+}
+
 async function NextPost({ today }: { today: string }) {
-  const { supabase } = await requireMember();
-  const { data } = await supabase
-    .from("posts")
+  const { data } = await db()
+    .from("pc_posts")
     .select("*")
     .gte("date", today)
     .neq("statut", "publie")
@@ -242,29 +329,22 @@ async function NextPost({ today }: { today: string }) {
     .order("heure")
     .limit(1);
   const post = ((data ?? [])[0] as PostRow | undefined) ?? null;
-  const team = await getTeam();
-  const who = post?.responsable_id ? team.find((m) => m.id === post.responsable_id) : undefined;
-  return <NextPostCard post={post} responsable={who ? toLite(who) : null} />;
-}
-
-async function MyOpenTasks({ today }: { today: string }) {
-  const { supabase, profile } = await requireMember();
-  const { data } = await supabase
-    .from("tasks")
-    .select("*")
-    .eq("responsable_id", profile.id)
-    .neq("statut", "valide")
-    .order("echeance", { nullsFirst: false })
-    .limit(6);
-  return <MyTasks tasks={(data ?? []) as TaskRow[]} today={today} />;
+  const team = await getActiveTeam();
+  return (
+    <NextPostCard
+      post={post}
+      responsable={
+        post?.responsable_id ? (team.find((m) => m.id === post.responsable_id) ?? null) : null
+      }
+    />
+  );
 }
 
 async function PrepSoon({ today }: { today: string }) {
-  const { supabase } = await requireMember();
   const tomorrow = addDaysISO(today, 1);
   // Les posts dont la préparation est dépassée (et pas commencée) remontent aussi : c'est le plus urgent.
-  const { data } = await supabase
-    .from("posts")
+  const { data } = await db()
+    .from("pc_posts")
     .select("*")
     .lte("prep_date", tomorrow)
     .gte("date", today)
@@ -272,22 +352,16 @@ async function PrepSoon({ today }: { today: string }) {
     .order("prep_date")
     .order("date")
     .limit(8);
-  const team = await getTeam();
+  const team = await getActiveTeam();
   const posts = ((data ?? []) as PostRow[]).filter(
     (p) => p.statut === "a_faire" || (p.prep_date ?? "") >= today,
   );
-  return <PrepSoonList posts={posts} people={team.map(toLite)} today={today} />;
-}
-
-async function Team() {
-  const [team, roles] = await Promise.all([getTeam(), getRoles()]);
-  return <TeamStrip members={team.filter((m) => m.active)} roles={roles} />;
+  return <PrepSoonList posts={posts} people={team} today={today} />;
 }
 
 async function Upcoming() {
-  const { supabase } = await requireMember();
-  const { data } = await supabase
-    .from("milestones")
+  const { data } = await db()
+    .from("pc_milestones")
     .select("*")
     .neq("statut", "realise")
     .order("ordre");

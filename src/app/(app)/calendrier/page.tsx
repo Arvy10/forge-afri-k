@@ -13,7 +13,6 @@ import { WeekBoard } from "@/components/calendar/WeekBoard";
 import { buttonClass } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { requireMember } from "@/lib/auth";
 import {
   calendarHref,
   parseCalendarQuery,
@@ -21,7 +20,6 @@ import {
   type CalendarQuery,
 } from "@/lib/calendar-params";
 import { DEFAULT_PUBLISH_TIME } from "@/lib/constants";
-import { getTeam, toLite, type PersonLite } from "@/lib/data";
 import {
   addDaysISO,
   defaultPrepDate,
@@ -33,12 +31,16 @@ import {
   todayISO,
   workWeekISO,
 } from "@/lib/dates";
-import { fetchPostDetail, fetchPosts } from "@/lib/posts-data";
+import type { MemberLite } from "@/lib/members";
 import type { PostInput } from "@/lib/schemas";
+import { fetchPostDetail, fetchPosts } from "@/server/posts";
+import { requireSession } from "@/server/session";
+import { getActiveTeam } from "@/server/team";
 
 export const metadata: Metadata = { title: "Calendrier éditorial" };
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+type Me = { id: string | null; isAdmin: boolean };
 
 function periodLabel(q: CalendarQuery): string {
   if (q.vue === "semaine") return `Semaine ${formatWeekRange(startOfWeekISO(q.date))}`;
@@ -47,12 +49,12 @@ function periodLabel(q: CalendarQuery): string {
 }
 
 export default async function CalendarPage({ searchParams }: { searchParams: SearchParams }) {
-  const { profile, isAdmin } = await requireMember();
+  const auth = await requireSession();
   const today = todayISO();
   const query = parseCalendarQuery(await searchParams, today);
-  const team = await getTeam();
-  const people = team.filter((m) => m.active).map(toLite);
-  const me = { id: profile.id, isAdmin };
+  const people = await getActiveTeam();
+  const me: Me = { id: auth.memberId, isAdmin: auth.isAdmin };
+  const canAddTask = auth.isAdmin || auth.settings?.tasks_add_policy !== "admin";
 
   // Clé de la zone principale : ne change pas quand on ouvre ou ferme une fiche.
   const bodyKey = [query.vue, query.date, query.type, query.canal, query.statut, query.resp].join(
@@ -63,11 +65,11 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
     <>
       <PageHeader
         title="Calendrier éditorial"
-        description={<>5 posts par semaine · Publication à 8h00 · Instagram, TikTok, Facebook</>}
+        description="5 posts par semaine · Publication à 8h00 · Instagram, TikTok, Facebook"
         actions={
           <>
-            {isAdmin && <ImportDialog />}
-            {isAdmin && (
+            {auth.isAdmin && <ImportDialog />}
+            {auth.isAdmin && (
               <a href="/calendrier/export" className={buttonClass("secondary")}>
                 <Download aria-hidden className="size-4" />
                 Exporter en CSV
@@ -105,14 +107,20 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
         href={calendarHref(query, { post: "new", d: null })}
         scroll={false}
         aria-label="Ajouter un post"
-        className="bg-accent-strong text-on-accent fixed right-4 bottom-20 z-20 inline-flex size-14 items-center justify-center rounded-full shadow-lg md:hidden"
+        className="bg-accent-strong text-on-accent fixed right-4 bottom-24 z-20 inline-flex size-14 items-center justify-center rounded-full shadow-lg active:scale-95 md:hidden"
       >
         <Plus aria-hidden className="size-6" />
       </Link>
 
       {query.post && (
         <Suspense fallback={null}>
-          <SheetLoader query={query} people={people} me={me} today={today} />
+          <SheetLoader
+            query={query}
+            people={people}
+            me={me}
+            today={today}
+            canAddTask={canAddTask}
+          />
         </Suspense>
       )}
     </>
@@ -126,13 +134,12 @@ async function CalendarBody({
   today,
 }: {
   query: CalendarQuery;
-  people: PersonLite[];
-  me: { id: string; isAdmin: boolean };
+  people: MemberLite[];
+  me: Me;
   today: string;
 }) {
-  const { supabase } = await requireMember();
   const range = rangeFor(query);
-  const posts = await fetchPosts(supabase, range, query, me.id);
+  const posts = await fetchPosts(range, query, me.id);
 
   if (query.vue === "semaine")
     return (
@@ -164,13 +171,14 @@ async function SheetLoader({
   people,
   me,
   today,
+  canAddTask,
 }: {
   query: CalendarQuery;
-  people: PersonLite[];
-  me: { id: string; isAdmin: boolean };
+  people: MemberLite[];
+  me: Me;
   today: string;
+  canAddTask: boolean;
 }) {
-  const { supabase } = await requireMember();
   const closeHref = calendarHref(query, { post: null, d: null });
 
   if (query.post === "new") {
@@ -187,17 +195,25 @@ async function SheetLoader({
       prep_date: defaultPrepDate(date),
       heure: DEFAULT_PUBLISH_TIME,
       legende: "",
-      responsable_id: me.id,
+      responsable_id: me.id ?? "",
       statut: "a_faire",
       lien: "",
       notes: "",
     };
     return (
-      <PostSheet mode="new" defaults={defaults} people={people} me={me} closeHref={closeHref} />
+      <PostSheet
+        mode="new"
+        defaults={defaults}
+        people={people}
+        me={me}
+        closeHref={closeHref}
+        today={today}
+        canAddTask={false}
+      />
     );
   }
 
-  const detail = await fetchPostDetail(supabase, query.post!);
+  const detail = await fetchPostDetail(query.post!);
   if (!detail) redirect(closeHref);
   const p = detail.post;
   const defaults: PostInput = {
@@ -215,7 +231,6 @@ async function SheetLoader({
     lien: p.lien ?? "",
     notes: p.notes,
   };
-  void today;
   return (
     <PostSheet
       mode="edit"
@@ -224,6 +239,8 @@ async function SheetLoader({
       people={people}
       me={me}
       closeHref={closeHref}
+      today={today}
+      canAddTask={canAddTask}
     />
   );
 }

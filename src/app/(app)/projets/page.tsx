@@ -3,7 +3,8 @@ import { CalendarDays, Check, ShieldAlert, Users } from "lucide-react";
 import { ProjectEditor } from "@/components/projects/ProjectEditor";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { requireMember } from "@/lib/auth";
+import { db } from "@/server/db";
+import { requireSession } from "@/server/session";
 import { PROJECT_STATUS_LABEL, type ProjectStatus } from "@/lib/constants";
 import { cn } from "@/lib/cn";
 import type { MilestoneRow, ProjectRow } from "@/lib/database.types";
@@ -19,10 +20,10 @@ const STATUS_TONE: Record<ProjectStatus, string> = {
 };
 
 export default async function ProjectsPage() {
-  const { supabase, isAdmin } = await requireMember();
+  const { isAdmin } = await requireSession();
   const [{ data: projects }, { data: milestones }] = await Promise.all([
-    supabase.from("projects").select("*").order("ordre"),
-    supabase.from("milestones").select("*").order("ordre"),
+    db().from("pc_projects").select("*").order("ordre"),
+    db().from("pc_milestones").select("*").order("ordre"),
   ]);
   const list = (projects ?? []) as ProjectRow[];
   const steps = (milestones ?? []) as MilestoneRow[];
@@ -38,7 +39,7 @@ export default async function ProjectsPage() {
         <EmptyState
           illustration="map"
           title="Aucun projet enregistré"
-          description="Les projets de l'association apparaîtront ici (supabase/seed.sql charge la liste de départ)."
+          description="Les projets de l'association apparaîtront ici (chargés par la migration « pc_seed »)."
         />
       ) : (
         <ul className="stagger mb-10 grid gap-4 md:grid-cols-2 xl:grid-cols-3">

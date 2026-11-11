@@ -5,7 +5,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { TypePill } from "@/components/ui/TypePill";
 import { cn } from "@/lib/cn";
 import { formatDateShort, formatDayShort, isPrepLate } from "@/lib/dates";
-import type { PersonLite } from "@/lib/data";
+import type { MemberLite } from "@/lib/members";
 import type { PostRow } from "@/lib/database.types";
 
 /** L'alerte principale du pôle : ce qu'il faut préparer ou filmer aujourd'hui ou demain. */
@@ -15,7 +15,7 @@ export function PrepSoonList({
   today,
 }: {
   posts: PostRow[];
-  people: PersonLite[];
+  people: MemberLite[];
   today: string;
 }) {
   const byId = new Map(people.map((p) => [p.id, p]));
@@ -64,7 +64,7 @@ export function PrepSoonList({
                   </span>
                 </span>
               </span>
-              {who && <Avatar name={who.name} src={who.avatar_url} id={who.id} size="sm" />}
+              {who && <Avatar name={who.name} color={who.couleur} size="sm" />}
             </Link>
           </li>
         );

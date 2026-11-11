@@ -65,7 +65,14 @@ export function ImportDialog() {
             Dans Excel : <strong>Fichier → Enregistrer sous → CSV</strong>. La première ligne doit
             contenir les titres de colonnes (au minimum « Date »). Les numéros sont attribués
             automatiquement. Une vérification précède tout import : rien n&apos;est ajouté sans ta
-            confirmation.
+            confirmation.{" "}
+            <a
+              href="/calendrier/modele"
+              className="text-accent-strong font-semibold underline underline-offset-4"
+            >
+              Télécharger le modèle
+            </a>
+            .
           </p>
 
           <FormError message={error} />
