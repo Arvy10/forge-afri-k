@@ -7,7 +7,8 @@ import {
 } from "@/lib/constants";
 import { cn } from "@/lib/cn";
 
-const DOT: Record<PostStatus, string> = {
+const DOT: Record<PostStatus | TaskStatus, string> = {
+  fait: "bg-[var(--s-valide)]",
   a_faire: "bg-[var(--s-a_faire)]",
   en_cours: "bg-[var(--s-en_cours)]",
   pret_a_valider: "bg-[var(--s-pret_a_valider)]",
@@ -36,10 +37,10 @@ export function StatusPill({
         className,
       )}
     >
-      {status === "publie" ? (
-        <Check aria-hidden className="size-3 text-[var(--s-publie)]" strokeWidth={3} />
+      {status === "publie" || status === "fait" ? (
+        <Check aria-hidden className="size-3 text-[var(--s-valide)]" strokeWidth={3} />
       ) : (
-        <span aria-hidden className={cn("size-2 rounded-full", DOT[status as PostStatus])} />
+        <span aria-hidden className={cn("size-2 rounded-full", DOT[status])} />
       )}
       {label}
     </span>
