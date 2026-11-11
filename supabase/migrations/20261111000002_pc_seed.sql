@@ -1,20 +1,20 @@
 -- =====================================================================
--- Données de départ. Idempotent : ne réécrit jamais ce que l'admin a modifié.
--- AUCUN post n'est créé : le calendrier démarre vide.
+-- Textes réels issus du séminaire de l'équipe. AUCUN membre, tâche ni post.
+-- Idempotent : ne réécrit jamais ce que l'administrateur a modifié.
 -- =====================================================================
 
--- Rôles du pôle ---------------------------------------------------------
-insert into public.roles (slug, name, mission, sort_order) values
-  ('ambassadeur', 'Ambassadeur du pôle', 'Coordonne le pôle, valide les contenus et fait le lien avec les autres pôles.', 1),
-  ('copywriter',  'Copywriter',          'Rédige les légendes le jour même de la publication.', 2),
-  ('visuels',     'Visuels',             'Crée les flyers, carrousels et affiches aux couleurs de Forge Afri''K.', 3),
-  ('video',       'Vidéo',               'Tourne et monte les vidéos au format 9:16.', 4),
-  ('publication', 'Publication',         'Programme et publie les posts à 8h00.', 5),
-  ('communaute',  'Communauté',          'Répond aux commentaires et aux messages.', 6)
-on conflict (slug) do nothing;
+-- Modèles de rôles (« ne_fait_pas » est laissé vide : à renseigner par l'équipe)
+insert into public.pc_roles (nom, mission, ordre) values
+  ('Ambassadeur du pôle', 'Coordonne le pôle, valide les contenus et fait le lien avec les autres pôles.', 1),
+  ('Copywriter',          'Rédige les légendes le jour même de la publication.', 2),
+  ('Visuels',             'Crée les flyers, carrousels et affiches aux couleurs de Forge Afri''K.', 3),
+  ('Vidéo',               'Tourne et monte les vidéos au format 9:16.', 4),
+  ('Publication',         'Programme et publie les posts à 8h00.', 5),
+  ('Communauté',          'Répond aux commentaires et aux messages.', 6)
+on conflict (nom) do nothing;
 
--- Règles et guide ------------------------------------------------------
-insert into public.guide_sections (slug, titre, contenu, ordre) values
+-- Règles et guide
+insert into public.pc_guide_sections (slug, titre, contenu, ordre) values
 ('a-faire', 'À faire', $md$
 - Publier à 8h00, aux dates du calendrier
 - Préparer 2 jours avant
@@ -67,8 +67,8 @@ Les posts du lundi se préparent le **dimanche**, pendant la réunion d'équipe.
 $md$, 8)
 on conflict (slug) do nothing;
 
--- Projets ---------------------------------------------------------------
-insert into public.projects (slug, titre, statut, description, prudence, pole_pilote, date_label, ordre) values
+-- Projets
+insert into public.pc_projects (slug, titre, statut, description, prudence, pole_pilote, date_label, ordre) values
 ('marche-culturelle', 'Marche culturelle à Pointe-Noire', 'en_preparation',
  'Événement de découverte, de sensibilisation, de rencontres et de mobilisation.',
  'Format, parcours et date non arrêtés : ne pas annoncer de date.', '', '', 1),
@@ -89,15 +89,15 @@ insert into public.projects (slug, titre, statut, description, prudence, pole_pi
  '', '', '22 et 23 mai 2027', 6)
 on conflict (slug) do nothing;
 
--- Frise de la feuille de route (objectifs de travail, pas des dates arrêtées) --
-insert into public.milestones (periode, titre, description, statut, ordre, project_id)
-select v.periode, v.titre, v.description, v.statut::public.milestone_status, v.ordre,
-       (select id from public.projects where slug = v.project_slug)
+-- Feuille de route (objectifs de travail, pas des dates arrêtées)
+insert into public.pc_milestones (periode, titre, description, statut, ordre, project_id)
+select v.periode, v.titre, v.description, v.statut::public.pc_milestone_status, v.ordre,
+       (select id from public.pc_projects where slug = v.project_slug)
 from (values
-  ('Oct. 2026',        'Formation',    'Séminaires des ambassadeurs.',               'realise', 1, null),
-  ('Nov. 2026',        'Mobilisation', 'Dossier mairie et conception.',              'a_venir', 2, 'initiative-quartier'),
-  ('Nov.-déc. 2026',   'Visibilité',   'Marche culturelle et sport mensuel.',        'a_venir', 3, 'marche-culturelle'),
-  ('2027',             'Construire',   'Étude puis chantier « 7 Days to Build ».',   'a_venir', 4, 'salle-de-classe'),
-  ('22-23 mai 2027',   'Rassembler',   'Summit à Brazzaville.',                      'a_venir', 5, 'summit')
+  ('Oct. 2026',       'Formation',    'Séminaires des ambassadeurs.',              'realise', 1, null),
+  ('Nov. 2026',       'Mobilisation', 'Dossier mairie et conception.',             'a_venir', 2, 'initiative-quartier'),
+  ('Nov.-déc. 2026',  'Visibilité',   'Marche culturelle et sport mensuel.',       'a_venir', 3, 'marche-culturelle'),
+  ('2027',            'Construire',   'Étude puis chantier « 7 Days to Build ».',  'a_venir', 4, 'salle-de-classe'),
+  ('22-23 mai 2027',  'Rassembler',   'Summit à Brazzaville.',                     'a_venir', 5, 'summit')
 ) as v(periode, titre, description, statut, ordre, project_slug)
-where not exists (select 1 from public.milestones);
+where not exists (select 1 from public.pc_milestones);
