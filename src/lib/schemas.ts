@@ -1,13 +1,14 @@
 import { z } from "zod";
 import {
-  ACCESS_ROLES,
   CHANNELS,
   CONTENT_TYPES,
+  MEMBER_COLORS,
   POST_FORMATS,
   POST_STATUSES,
   PROJECT_STATUSES,
   TASK_PRIORITIES,
   TASK_STATUSES,
+  TASKS_POLICIES,
 } from "./constants";
 import { isISODate } from "./dates";
 
@@ -15,31 +16,6 @@ import { isISODate } from "./dates";
 
 const blankToNull = (v: string | null | undefined) =>
   v == null || v.trim() === "" ? null : v.trim();
-
-export const emailSchema = z
-  .string({ error: "Entre une adresse e-mail." })
-  .trim()
-  .toLowerCase()
-  .pipe(z.email("Cette adresse e-mail n'a pas la bonne forme."));
-
-export const passwordSchema = z
-  .string({ error: "Choisis un mot de passe." })
-  .min(10, "Le mot de passe doit faire au moins 10 caractères.")
-  .max(72, "Le mot de passe est trop long (72 caractères maximum).");
-
-export const loginSchema = z.object({
-  email: emailSchema,
-  password: z.string().min(1, "Entre ton mot de passe."),
-});
-
-export const resetRequestSchema = z.object({ email: emailSchema });
-
-export const setPasswordSchema = z
-  .object({ password: passwordSchema, confirm: z.string().min(1, "Confirme ton mot de passe.") })
-  .refine((v) => v.password === v.confirm, {
-    message: "Les deux mots de passe ne sont pas identiques.",
-    path: ["confirm"],
-  });
 
 const optionalDate = z
   .string()
@@ -60,32 +36,54 @@ const optionalUuid = z
 
 const time = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Heure invalide (format 08:00).");
 
-/* ------------------------------ Membres ------------------------------ */
+/* ------------------------------ Accès ------------------------------ */
 
-export const inviteSchema = z.object({
-  email: emailSchema,
-  full_name: z.string().trim().max(120, "Nom trop long.").default(""),
-  access_role: z.enum(ACCESS_ROLES).default("member"),
-  role_ids: z.array(z.uuid()).default([]),
+export const accessCodeSchema = z.object({
+  code: z
+    .string({ error: "Entre le code d'accès." })
+    .trim()
+    .min(1, "Entre le code d'accès.")
+    .max(100, "Code trop long."),
+  suite: z.string().max(300).optional(),
 });
 
-export const profileSchema = z.object({
-  full_name: z
-    .string()
+export const adminCodeSchema = z.object({
+  code: z
+    .string({ error: "Entre le code administrateur." })
     .trim()
-    .min(2, "Entre ton nom (2 lettres minimum).")
-    .max(120, "Nom trop long."),
-  bio: z.string().trim().max(500, "500 caractères maximum.").default(""),
-  mission: z.string().trim().max(1000, "1000 caractères maximum.").default(""),
-  does: z.string().trim().max(1000, "1000 caractères maximum.").default(""),
-  does_not: z.string().trim().max(1000, "1000 caractères maximum.").default(""),
-  whatsapp: z
-    .string()
-    .trim()
-    .max(30, "Numéro trop long.")
-    .regex(/^[+\d\s().-]*$/, "Utilise seulement des chiffres, +, espaces et tirets.")
-    .default(""),
+    .min(1, "Entre le code administrateur.")
+    .max(100),
+});
+
+export const newCodeSchema = z
+  .object({
+    code: z
+      .string()
+      .min(6, "Le code doit faire au moins 6 caractères.")
+      .max(100, "Code trop long."),
+    confirm: z.string(),
+  })
+  .refine((v) => v.code === v.confirm, {
+    message: "Les deux codes ne sont pas identiques.",
+    path: ["confirm"],
+  });
+
+export const settingsSchema = z.object({ tasks_add_policy: z.enum(TASKS_POLICIES) });
+
+/* ------------------------------ Membres ------------------------------ */
+
+export const memberSchema = z.object({
+  prenom: z.string().trim().min(1, "Entre un prénom.").max(60, "Prénom trop long."),
+  nom: z.string().trim().max(80, "Nom trop long.").default(""),
+  couleur: z.enum(MEMBER_COLORS).default("vert"),
   role_ids: z.array(z.uuid()).default([]),
+});
+export type MemberInput = z.input<typeof memberSchema>;
+
+export const roleSchema = z.object({
+  id: z.uuid(),
+  mission: z.string().trim().max(1000, "1000 caractères maximum.").default(""),
+  ne_fait_pas: z.string().trim().max(1000, "1000 caractères maximum.").default(""),
 });
 
 /* ------------------------------ Posts ------------------------------ */
@@ -118,17 +116,12 @@ export type PostValues = z.output<typeof postSchema>;
 export const postStatusSchema = z.object({ id: z.uuid(), statut: z.enum(POST_STATUSES) });
 export const postMoveSchema = z.object({ id: z.uuid(), date: requiredDate });
 
-export const commentSchema = z.object({
-  post_id: z.uuid(),
-  body: z.string().trim().min(1, "Écris un message.").max(4000, "4000 caractères maximum."),
-});
-
 /* ------------------------------ Tâches ------------------------------ */
 
 export const taskSchema = z.object({
   titre: z.string().trim().min(1, "Donne un titre à la tâche.").max(200, "200 caractères maximum."),
   description: z.string().trim().max(3000, "3000 caractères maximum.").default(""),
-  responsable_id: optionalUuid,
+  member_id: optionalUuid,
   echeance: optionalDate,
   priorite: z.enum(TASK_PRIORITIES).default("normale"),
   post_id: optionalUuid,
@@ -138,6 +131,33 @@ export type TaskInput = z.input<typeof taskSchema>;
 export type TaskValues = z.output<typeof taskSchema>;
 
 export const taskStatusSchema = z.object({ id: z.uuid(), statut: z.enum(TASK_STATUSES) });
+
+export const deliverableLinkSchema = z.object({
+  task_id: z.uuid(),
+  nom: z.string().trim().max(200, "Nom trop long.").default(""),
+  url: z
+    .string({ error: "Colle un lien." })
+    .trim()
+    .min(1, "Colle un lien.")
+    .max(2000, "Lien trop long.")
+    .refine((v) => /^https?:\/\/\S+$/i.test(v), "Le lien doit commencer par http:// ou https://."),
+});
+
+export const deliverableFileSchema = z.object({
+  task_id: z.uuid(),
+  file_name: z.string().trim().min(1).max(200),
+  mime_type: z.string().max(120).default("application/octet-stream"),
+  size_bytes: z.number().int().positive(),
+});
+
+export const deliverableRegisterSchema = deliverableFileSchema.extend({
+  path: z.string().min(1).max(400),
+});
+
+export const nudgeSchema = z.object({
+  task_id: z.uuid(),
+  note: z.string().trim().max(500, "500 caractères maximum.").default(""),
+});
 
 /* ------------------------------ Règles et projets ------------------------------ */
 

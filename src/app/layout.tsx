@@ -30,6 +30,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html
       lang="fr"
       data-theme={dataTheme}
+      data-scroll-behavior="smooth"
       className={`${inter.variable} ${spaceGrotesk.variable}`}
       suppressHydrationWarning
     >

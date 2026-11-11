@@ -1,31 +1,24 @@
-import { DemoBanner } from "@/components/layout/DemoBanner";
+import { redirect } from "next/navigation";
+import { LiveRefresh } from "@/components/layout/LiveRefresh";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { MobileTopBar } from "@/components/layout/MobileTopBar";
 import { Sidebar } from "@/components/layout/Sidebar";
 import type { ShellUser } from "@/components/layout/UserCard";
-import { ACCESS_ROLE_LABEL } from "@/lib/constants";
-import { requireMember } from "@/lib/auth";
-import { cookies } from "next/headers";
-import { DEMO_COOKIE, isDemoMode } from "@/lib/demo/mode";
-import { getRoles, getTeam } from "@/lib/data";
+import { requireSession } from "@/server/session";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const { profile, isAdmin } = await requireMember();
-  const demo = isDemoMode();
-  const demoVariant = (await cookies()).get(DEMO_COOKIE)?.value === "vide" ? "vide" : "exemples";
-  const [team, roles] = await Promise.all([getTeam(), getRoles()]);
-  const me = team.find((m) => m.id === profile.id);
-  const myRoles = roles.filter((r) => me?.role_ids.includes(r.id)).map((r) => r.name);
+  const auth = await requireSession();
+  // Sans identité (« Qui es-tu ? » pas encore fait), seul l'administrateur peut entrer pour ajouter les membres.
+  if (!auth.member && !auth.isAdmin) redirect("/qui-es-tu");
+
   const shellUser: ShellUser = {
-    id: profile.id,
-    name: profile.full_name || profile.email,
-    avatar_url: me?.avatar_url ?? null,
-    roleLabel:
-      myRoles.length > 0
-        ? myRoles.join(" · ")
-        : isAdmin
-          ? ACCESS_ROLE_LABEL.admin
-          : ACCESS_ROLE_LABEL.member,
+    id: auth.member?.id ?? null,
+    name: auth.member
+      ? [auth.member.prenom, auth.member.nom].filter(Boolean).join(" ")
+      : "Administrateur",
+    color: auth.member?.couleur ?? "orange",
+    roleLabel: auth.isAdmin ? "Mode administrateur" : "Membre du pôle",
+    isAdmin: auth.isAdmin,
   };
 
   return (
@@ -36,9 +29,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       >
         Aller au contenu
       </a>
-      {demo && <DemoBanner variant={demoVariant} />}
-      <MobileTopBar />
       <Sidebar user={shellUser} />
+      <MobileTopBar user={shellUser} />
       <main
         id="contenu"
         className="stagger mx-auto w-full max-w-[88rem] px-4 pt-5 pb-28 md:px-8 md:pt-8 md:pb-12"
@@ -46,6 +38,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         {children}
       </main>
       <MobileNav user={shellUser} />
+      <LiveRefresh />
     </div>
   );
 }

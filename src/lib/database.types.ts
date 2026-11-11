@@ -1,46 +1,43 @@
 /**
- * Types de la base, écrits à la main d'après supabase/migrations/0001_init.sql.
- * (Remplaçables par `supabase gen types typescript` si tu utilises la CLI Supabase.)
+ * Types de la base V2 (tables pc_*), écrits à la main d'après supabase/migrations.
  */
 import type {
-  AccessRole,
+  ActivityKind,
   Channel,
   ContentType,
+  DeliverableType,
+  MemberColor,
+  MilestoneStatus,
   PostFormat,
   PostStatus,
   ProjectStatus,
   TaskPriority,
   TaskStatus,
+  TasksPolicy,
 } from "./constants";
 
-export type MilestoneStatus = "realise" | "en_cours" | "a_venir";
-
-export type ProfileRow = {
+export type MemberRow = {
   id: string;
-  email: string;
-  full_name: string;
-  avatar_path: string | null;
-  bio: string;
-  mission: string;
-  does: string;
-  does_not: string;
-  whatsapp: string;
-  access_role: AccessRole;
-  active: boolean;
-  onboarded: boolean;
+  prenom: string;
+  nom: string | null;
+  couleur: MemberColor;
+  photo_path: string | null;
+  actif: boolean;
+  ordre: number;
   created_at: string;
   updated_at: string;
 };
 export type RoleRow = {
   id: string;
-  slug: string;
-  name: string;
+  nom: string;
   mission: string;
-  sort_order: number;
+  ne_fait_pas: string;
+  ordre: number;
   created_at: string;
   updated_at: string;
 };
-export type ProfileRoleRow = { profile_id: string; role_id: string; created_at: string };
+export type MemberRoleRow = { member_id: string; role_id: string; created_at: string };
+
 export type PostRow = {
   id: string;
   numero: number;
@@ -57,50 +54,59 @@ export type PostRow = {
   statut: PostStatus;
   lien: string | null;
   notes: string;
-  created_by: string | null;
+  cree_par: string | null;
+  maj_par: string | null;
   created_at: string;
   updated_at: string;
 };
-export type PostStatusHistoryRow = {
-  id: number;
-  post_id: string;
-  from_status: PostStatus | null;
-  to_status: PostStatus;
-  changed_by: string | null;
-  changed_at: string;
-};
+
 export type TaskRow = {
   id: string;
   titre: string;
   description: string;
-  responsable_id: string | null;
+  member_id: string | null;
   echeance: string | null;
   priorite: TaskPriority;
-  post_id: string | null;
   statut: TaskStatus;
-  created_by: string | null;
-  created_at: string;
-  updated_at: string;
-};
-export type CommentRow = {
-  id: string;
-  post_id: string;
-  author_id: string | null;
-  body: string;
-  created_at: string;
-  updated_at: string;
-};
-export type AttachmentRow = {
-  id: string;
   post_id: string | null;
-  task_id: string | null;
-  storage_path: string;
-  file_name: string;
-  mime_type: string;
-  size_bytes: number;
-  uploaded_by: string | null;
+  fait_le: string | null;
+  cree_par: string | null;
+  maj_par: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type DeliverableRow = {
+  id: string;
+  task_id: string;
+  type: DeliverableType;
+  nom: string;
+  url: string | null;
+  storage_path: string | null;
+  taille_octets: number | null;
+  depose_par: string | null;
   created_at: string;
 };
+
+export type NudgeRow = {
+  id: string;
+  task_id: string;
+  par_member_id: string | null;
+  note: string;
+  created_at: string;
+};
+
+export type ActivityRow = {
+  id: number;
+  kind: ActivityKind;
+  member_id: string | null;
+  cible_id: string | null;
+  task_id: string | null;
+  post_id: string | null;
+  libelle: string;
+  created_at: string;
+};
+
 export type GuideSectionRow = {
   id: string;
   slug: string;
@@ -134,8 +140,22 @@ export type MilestoneRow = {
   created_at: string;
   updated_at: string;
 };
+export type SettingsRow = {
+  id: boolean;
+  tasks_add_policy: TasksPolicy;
+  code_hash: string | null;
+  code_version: number;
+  updated_at: string;
+};
+export type LoginAttemptRow = {
+  ip_hash: string;
+  kind: "access" | "admin";
+  tries: number;
+  window_start: string;
+  locked_until: string | null;
+};
 export type FeatureInterestRow = {
-  profile_id: string;
+  member_id: string;
   feature: "bibliotheque" | "reunions" | "resultats";
   created_at: string;
 };
@@ -150,18 +170,20 @@ type Table<Row, Required extends keyof Row = never> = {
 export type Database = {
   public: {
     Tables: {
-      profiles: Table<ProfileRow, "id" | "email">;
-      roles: Table<RoleRow, "slug" | "name">;
-      profile_roles: Table<ProfileRoleRow, "profile_id" | "role_id">;
-      posts: Table<PostRow, "date" | "type" | "canal_principal">;
-      post_status_history: Table<PostStatusHistoryRow, "post_id" | "to_status">;
-      tasks: Table<TaskRow, "titre">;
-      comments: Table<CommentRow, "post_id" | "body">;
-      attachments: Table<AttachmentRow, "storage_path" | "file_name">;
-      guide_sections: Table<GuideSectionRow, "slug" | "titre">;
-      projects: Table<ProjectRow, "slug" | "titre">;
-      milestones: Table<MilestoneRow, "periode" | "titre">;
-      feature_interests: Table<FeatureInterestRow, "profile_id" | "feature">;
+      pc_members: Table<MemberRow, "prenom">;
+      pc_roles: Table<RoleRow, "nom">;
+      pc_member_roles: Table<MemberRoleRow, "member_id" | "role_id">;
+      pc_posts: Table<PostRow, "date" | "type" | "canal_principal">;
+      pc_tasks: Table<TaskRow, "titre">;
+      pc_task_deliverables: Table<DeliverableRow, "task_id" | "type" | "nom">;
+      pc_nudges: Table<NudgeRow, "task_id">;
+      pc_activity: Table<ActivityRow, "kind">;
+      pc_guide_sections: Table<GuideSectionRow, "slug" | "titre">;
+      pc_projects: Table<ProjectRow, "slug" | "titre">;
+      pc_milestones: Table<MilestoneRow, "periode" | "titre">;
+      pc_settings: Table<SettingsRow>;
+      pc_login_attempts: Table<LoginAttemptRow, "ip_hash" | "kind">;
+      pc_feature_interests: Table<FeatureInterestRow, "member_id" | "feature">;
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

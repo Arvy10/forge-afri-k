@@ -77,12 +77,12 @@ export const POST_STATUS_LABEL: Record<PostStatus, string> = {
   publie: "Publié",
 };
 
-export const TASK_STATUSES = ["a_faire", "en_cours", "valide"] as const;
+export const TASK_STATUSES = ["a_faire", "en_cours", "fait"] as const;
 export type TaskStatus = (typeof TASK_STATUSES)[number];
 export const TASK_STATUS_LABEL: Record<TaskStatus, string> = {
   a_faire: "À faire",
   en_cours: "En cours",
-  valide: "Validé",
+  fait: "Fait",
 };
 
 export const TASK_PRIORITIES = ["normale", "haute"] as const;
@@ -92,12 +92,33 @@ export const TASK_PRIORITY_LABEL: Record<TaskPriority, string> = {
   haute: "Haute",
 };
 
-export const ACCESS_ROLES = ["admin", "member"] as const;
-export type AccessRole = (typeof ACCESS_ROLES)[number];
-export const ACCESS_ROLE_LABEL: Record<AccessRole, string> = {
-  admin: "Administrateur",
-  member: "Membre",
+export const DELIVERABLE_TYPES = ["fichier", "lien"] as const;
+export type DeliverableType = (typeof DELIVERABLE_TYPES)[number];
+
+export const TASKS_POLICIES = ["tous", "admin"] as const;
+export type TasksPolicy = (typeof TASKS_POLICIES)[number];
+
+/** Couleurs de pastille d'un membre : reprennent les couleurs des types de contenu. */
+export const MEMBER_COLORS = ["vert", "orange", "sable", "bleu", "ambre"] as const;
+export type MemberColor = (typeof MEMBER_COLORS)[number];
+export const MEMBER_COLOR_LABEL: Record<MemberColor, string> = {
+  vert: "Vert",
+  orange: "Orange",
+  sable: "Sable",
+  bleu: "Bleu-gris",
+  ambre: "Ambre",
 };
+
+export const ACTIVITY_KINDS = [
+  "task_created",
+  "task_done",
+  "task_reopened",
+  "deliverable_added",
+  "nudge",
+  "post_created",
+  "post_published",
+] as const;
+export type ActivityKind = (typeof ACTIVITY_KINDS)[number];
 
 export const PROJECT_STATUSES = [
   "a_decider",
@@ -114,3 +135,5 @@ export const PROJECT_STATUS_LABEL: Record<ProjectStatus, string> = {
   realise: "Réalisé",
   date_annoncee: "Date annoncée",
 };
+
+export type MilestoneStatus = "realise" | "en_cours" | "a_venir";

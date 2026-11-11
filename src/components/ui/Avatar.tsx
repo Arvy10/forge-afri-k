@@ -1,19 +1,15 @@
 import { Gear } from "./Gear";
 import { cn } from "@/lib/cn";
+import type { MemberColor } from "@/lib/constants";
 
-const TONES = [
-  "bg-t-impact-bg text-t-impact-fg",
-  "bg-t-patrimoine-bg text-t-patrimoine-fg",
-  "bg-t-coulisses-bg text-t-coulisses-fg",
-  "bg-t-fun-bg text-t-fun-fg",
-  "bg-t-appel_action-bg text-t-appel_action-fg",
-];
-
-function hash(s: string) {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  return h;
-}
+/** Couleur de pastille d'un membre : reprend les couleurs des types de contenu. */
+const TONES: Record<MemberColor, string> = {
+  vert: "bg-t-impact-bg text-t-impact-fg",
+  orange: "bg-t-appel_action-bg text-t-appel_action-fg",
+  sable: "bg-t-patrimoine-bg text-t-patrimoine-fg",
+  bleu: "bg-t-coulisses-bg text-t-coulisses-fg",
+  ambre: "bg-t-fun-bg text-t-fun-fg",
+};
 
 export function initials(name: string) {
   const parts = name
@@ -37,37 +33,28 @@ const SIZES = {
 
 type AvatarProps = {
   name: string;
-  src?: string | null;
-  id?: string;
+  color?: MemberColor;
   size?: keyof typeof SIZES;
   className?: string;
 };
 
-/** Photo, sinon pastille avec initiales et engrenage en filigrane. */
-export function Avatar({ name, src, id, size = "md", className }: AvatarProps) {
-  const tone = TONES[hash(id ?? name) % TONES.length];
+/** Pastille colorée avec l'initiale ; l'engrenage du logo en filigrane. */
+export function Avatar({ name, color = "vert", size = "md", className }: AvatarProps) {
   return (
     <span
       className={cn(
         "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full font-semibold select-none",
         SIZES[size],
-        !src && tone,
+        TONES[color],
         className,
       )}
       title={name}
     >
-      {src ? (
-        // eslint-disable-next-line @next/next/no-img-element -- URL signée, temporaire
-        <img src={src} alt={name} className="size-full object-cover" loading="lazy" />
-      ) : (
-        <>
-          <Gear className="absolute -right-1/4 -bottom-1/4 size-3/4 opacity-20" />
-          <span aria-hidden className="relative">
-            {initials(name)}
-          </span>
-          <span className="sr-only">{name}</span>
-        </>
-      )}
+      <Gear className="absolute -right-1/4 -bottom-1/4 size-3/4 opacity-20" />
+      <span aria-hidden className="relative">
+        {initials(name)}
+      </span>
+      <span className="sr-only">{name}</span>
     </span>
   );
 }

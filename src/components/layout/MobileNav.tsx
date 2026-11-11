@@ -24,7 +24,7 @@ export function MobileNav({ user }: { user: ShellUser }) {
         aria-label="Navigation principale"
         className="border-line bg-surface fixed inset-x-0 bottom-0 z-30 flex border-t pb-[env(safe-area-inset-bottom)] md:hidden"
       >
-        {primary.map(({ href, label, icon: Icon }) => {
+        {primary.map(({ href, label, short, icon: Icon }) => {
           const active = isActivePath(pathname, href);
           return (
             <Link
@@ -37,7 +37,7 @@ export function MobileNav({ user }: { user: ShellUser }) {
               )}
             >
               <Icon aria-hidden className="size-6" strokeWidth={active ? 2.4 : 1.9} />
-              <span>{label.split(" ")[0]}</span>
+              <span>{short ?? label}</span>
               {active && (
                 <span aria-hidden className="title-bar bg-accent -mt-0.5 h-0.5 w-6 rounded-full" />
               )}
@@ -78,7 +78,7 @@ export function MobileNav({ user }: { user: ShellUser }) {
             </Dialog.Close>
           </div>
           <nav aria-label="Toutes les sections" className="flex-1 overflow-y-auto">
-            <NavLinks onNavigate={() => setOpen(false)} />
+            <NavLinks isAdmin={user.isAdmin} onNavigate={() => setOpen(false)} />
           </nav>
           <UserCard user={user} />
         </Dialog.Content>

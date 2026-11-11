@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { NAV_ITEMS, isActivePath } from "@/lib/nav";
+import { isActivePath, navFor } from "@/lib/nav";
 import { cn } from "@/lib/cn";
 
-export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+export function NavLinks({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate?: () => void }) {
   const pathname = usePathname();
   return (
     <ul className="space-y-1">
-      {NAV_ITEMS.map(({ href, label, icon: Icon, soon }) => {
+      {navFor(isAdmin).map(({ href, label, icon: Icon, soon }) => {
         const active = isActivePath(pathname, href);
         return (
           <li key={href}>
@@ -18,7 +18,7 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
               onClick={onNavigate}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-all duration-200 hover:translate-x-0.5",
+                "flex min-h-12 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-all duration-200 hover:translate-x-0.5 md:min-h-10",
                 active
                   ? "bg-on-forest/12 text-on-forest border-accent border-l-4 pl-2"
                   : "text-on-forest/80 hover:bg-on-forest/8 hover:text-on-forest",
