@@ -281,6 +281,19 @@ export function parseTimeCell(value: string): string | null {
 
 /* ------------------------------- Lecture du tableau ------------------------------- */
 
+/** Séparateur de cellules, d'après l'ensemble des lignes (et non la seule première, qui peut être un titre). */
+function pickDelimiter(lines: string[], text: string): "," | ";" | "\t" {
+  const sample = lines.slice(0, 40);
+  const score = (ch: string) => sample.filter((l) => l.split(ch).length - 1 >= 2).length;
+  const tab = score("\t");
+  const semi = score(";");
+  const comma = score(",");
+  if (tab > 0 && tab >= semi && tab >= comma / 2) return "\t";
+  if (semi > 0 && semi >= comma) return ";";
+  if (comma > 0) return ",";
+  return detectDelimiter(text);
+}
+
 /** Tableau copié : cellules séparées par tabulation, « ; », « , » ou « | » (tableau Markdown). */
 export function readTable(text: string): string[][] {
   const clean = text.replace(/\r\n?/g, "\n").replace(/^﻿/, "");
@@ -298,7 +311,7 @@ export function readTable(text: string): string[][] {
       )
       .filter((cells) => !cells.every((c) => /^:?-{2,}:?$/.test(c) || c === ""));
   }
-  return parseCsv(clean, detectDelimiter(clean));
+  return parseCsv(clean, pickDelimiter(lines, clean));
 }
 
 /* ------------------------------- Reconnaissance des colonnes ------------------------------- */
@@ -560,7 +573,13 @@ export function importPostsText(
   options: ParseOptions = {},
 ): ImportReport {
   const today = options.today ?? todayISO();
-  const table = readTable(text).filter((r) => r.some((c) => c.trim() !== ""));
+  const allRows = readTable(text).filter((r) => r.some((c) => c.trim() !== ""));
+  // Feuille copiée en entier : des lignes de titre peuvent précéder la ligne des colonnes. On les saute.
+  const headerAt = allRows
+    .slice(0, 15)
+    .findIndex((r) => r.filter((c) => headerField(c) !== null).length >= 3);
+  const skipped = headerAt > 0 ? headerAt : 0;
+  const table = allRows.slice(skipped);
   if (table.length === 0) return { rows: [], fatal: "Rien à lire : colle ou importe un tableau." };
 
   const guess = suggestMapping(table, people, today);
@@ -608,7 +627,7 @@ export function importPostsText(
   // Semaine courante, pour les tableaux qui n'ont que des noms de jours.
   let weekStart: ISODate | null = options.weekStart ? startOfWeekISO(options.weekStart) : null;
   let lastWeekday = 0;
-  const startLine = hasHeader ? 2 : 1;
+  const startLine = (hasHeader ? 2 : 1) + skipped;
 
   const rows: ImportRowResult[] = [];
   body.forEach((cells, idx) => {

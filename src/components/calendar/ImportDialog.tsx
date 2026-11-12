@@ -9,6 +9,7 @@ import { Button, buttonClass } from "@/components/ui/Button";
 import { FormError } from "@/components/ui/Field";
 import { CHANNEL_LABEL, CONTENT_TYPE_META } from "@/lib/constants";
 import { formatDayLong } from "@/lib/dates";
+import { sheetToText, type SheetCell } from "@/lib/sheet-text";
 import { FIELD_KEYS, FIELD_LABEL, type FieldKey, type ImportReport } from "@/lib/paste-import";
 import { cn } from "@/lib/cn";
 
@@ -110,7 +111,7 @@ export function ImportDialog() {
             {(
               [
                 ["coller", "Coller le texte", ClipboardPaste],
-                ["fichier", "Fichier CSV", FileUp],
+                ["fichier", "Fichier Excel / CSV", FileUp],
               ] as const
             ).map(([m, label, Icon]) => (
               <button
@@ -156,15 +157,27 @@ export function ImportDialog() {
               <input
                 ref={input}
                 type="file"
-                accept=".csv,text/csv,text/plain"
+                accept=".xlsx,.csv,text/csv,text/plain"
                 className="sr-only"
-                aria-label="Choisir un fichier CSV"
+                aria-label="Choisir un fichier Excel ou CSV"
                 onChange={async (e) => {
                   const f = e.target.files?.[0];
                   if (!f) return;
                   setFileName(f.name);
                   setMapping(undefined);
-                  setText(await f.text());
+                  setError(null);
+                  if (/\.xlsx$/i.test(f.name)) {
+                    try {
+                      // Chargé seulement quand on choisit un fichier Excel (première feuille).
+                      const { readSheet } = await import("read-excel-file/universal");
+                      setText(sheetToText((await readSheet(f)) as unknown as SheetCell[][]));
+                    } catch {
+                      setText("");
+                      setError(
+                        "Ce fichier Excel n'a pas pu être lu. Enregistre-le en .xlsx ou en CSV, ou colle le texte.",
+                      );
+                    }
+                  } else setText(await f.text());
                 }}
               />
               <Button variant="secondary" onClick={() => input.current?.click()}>
@@ -178,7 +191,7 @@ export function ImportDialog() {
                 >
                   Télécharger le modèle
                 </a>{" "}
-                (Excel → Enregistrer sous → CSV).
+                (modèle CSV). Fichier Excel (.xlsx) : la première feuille est lue.
               </p>
             </div>
           )}

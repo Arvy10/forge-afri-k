@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { sheetToText } from "@/lib/sheet-text";
 import {
   importPostsText,
   parseDateFlexible,
@@ -153,5 +154,51 @@ describe("import d'un calendrier collé", () => {
     const { mapping, hasHeader } = suggestMapping(table, people, TODAY);
     expect(hasHeader).toBe(true);
     expect(mapping).toEqual(["date", "canal", "idee"]);
+  });
+});
+
+describe("feuille copiée en entier", () => {
+  it("saute les lignes de titre avant la ligne des colonnes", () => {
+    const text = [
+      "Forge Afri'K · Calendrier éditorial · du 11 novembre au 4 décembre 2026",
+      "Pôle Communication & Réseau · 5 posts par semaine",
+      "",
+      "N°\tDate\tJour\tType de contenu\tCanal principal\tAutres canaux\tFormat\tIdée / scénario\tÀ préparer / filmer le\tHeure de publication\tStatut",
+      "1\t11/11/2026\tMer\tCoulisses\tTikTok + Instagram (Reel)\tFacebook (photos)\tVidéo 9:16 · mini-interview\tMini-interview\tDès aujourd'hui (10/11)\t08:00\tÀ faire",
+      "4\t16/11/2026\tLun\tImpact\tFacebook (photo)\tInstagram (carrousel)\tCarrousel 3 slides\tPoint d'avancement\tDim 15/11\t08:00\tÀ faire",
+    ].join("\n");
+    const { rows, analysis } = importPostsText(text, people, { today: TODAY });
+    expect(analysis?.hasHeader).toBe(true);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]!.line).toBe(4); // rang parmi les lignes non vides
+    expect(rows[0]!.post).toMatchObject({
+      date: "2026-11-11",
+      type: "coulisses",
+      canal_principal: "tiktok",
+      autres_canaux: ["instagram", "facebook"],
+      format: "video_9_16",
+      prep_date: "2026-11-10",
+    });
+    expect(rows[1]!.post).toMatchObject({
+      type: "impact",
+      format: "carrousel",
+      prep_date: "2026-11-15",
+    });
+  });
+});
+
+describe("feuille Excel → texte", () => {
+  it("convertit dates, nombres et cellules vides", () => {
+    const text = sheetToText([
+      ["N°", "Date", "Idée"],
+      [1, new Date(Date.UTC(2026, 10, 11)), "Mini-interview"],
+      [null, null, null],
+      [2, "12/11/2026", "Sketch\navec retour"],
+    ]);
+    expect(text).toBe(
+      "N°\tDate\tIdée\n1\t11/11/2026\tMini-interview\n2\t12/11/2026\tSketch avec retour",
+    );
+    const { rows } = importPostsText(text, people, { today: TODAY });
+    expect(rows.map((r) => r.post?.date)).toEqual(["2026-11-11", "2026-11-12"]);
   });
 });
