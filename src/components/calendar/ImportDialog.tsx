@@ -157,7 +157,6 @@ export function ImportDialog() {
               <input
                 ref={input}
                 type="file"
-                accept=".xlsx,.csv,text/csv,text/plain"
                 className="sr-only"
                 aria-label="Choisir un fichier Excel ou CSV"
                 onChange={async (e) => {
@@ -166,7 +165,12 @@ export function ImportDialog() {
                   setFileName(f.name);
                   setMapping(undefined);
                   setError(null);
-                  if (/\.xlsx$/i.test(f.name)) {
+                  if (/\.(pdf|docx?|png|jpe?g|zip|apk|mp4)$/i.test(f.name)) {
+                    setText("");
+                    setError(
+                      "Ce type de fichier ne peut pas être lu. Choisis un fichier Excel (.xlsx) ou CSV.",
+                    );
+                  } else if (/\.xlsx$/i.test(f.name)) {
                     try {
                       // Chargé seulement quand on choisit un fichier Excel (première feuille).
                       const { readSheet } = await import("read-excel-file/universal");
