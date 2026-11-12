@@ -42,7 +42,7 @@ export async function changeAccessCode(input: unknown): Promise<ActionResult> {
     if (error) throw new ActionError("Impossible de changer le code. Réessaie.");
     // Garde la session de l'administrateur en cours avec la nouvelle version.
     await startSession(memberId);
-    await startAdmin();
+    await startAdmin(true);
     refresh();
     return { ok: true };
   });
@@ -58,7 +58,7 @@ export async function signOutEveryone(): Promise<ActionResult> {
       .eq("id", true);
     if (error) throw new ActionError("Impossible de déconnecter les sessions. Réessaie.");
     await startSession(memberId);
-    await startAdmin();
+    await startAdmin(true);
     refresh();
     return { ok: true };
   });

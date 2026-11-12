@@ -4,12 +4,13 @@ import { UserRound } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ProgressBar } from "@/components/ui/ProgressBar";
+import { RoleCards } from "@/components/team/RoleCards";
 import { TaskGroups } from "@/components/tasks/TaskGroups";
 import { todayISO } from "@/lib/dates";
 import { weekProgress } from "@/lib/progress";
 import { requireSession } from "@/server/session";
 import { loadTaskPage } from "@/server/task-page";
-import { getTeam } from "@/server/team";
+import { getRoles, getTeam } from "@/server/team";
 
 export const metadata: Metadata = { title: "Mon espace" };
 
@@ -38,9 +39,10 @@ export default async function MySpacePage() {
   }
 
   const today = todayISO();
-  const [{ tasks, postOptions }, team] = await Promise.all([
+  const [{ tasks, postOptions }, team, roles] = await Promise.all([
     loadTaskPage({ memberId: member.id }),
     getTeam(),
+    getRoles(),
   ]);
   const me = team.find((m) => m.id === member.id);
   const progress = weekProgress(tasks, today);
@@ -59,6 +61,8 @@ export default async function MySpacePage() {
           </p>
         </div>
       </header>
+
+      <RoleCards roles={roles} memberRoleIds={me?.roleIds ?? []} />
 
       <section
         aria-labelledby="progression"

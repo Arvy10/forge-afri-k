@@ -2,13 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { KeyRound, LogOut, Save } from "lucide-react";
-import { saveRole } from "@/actions/members";
+import { KeyRound, LogOut } from "lucide-react";
 import { changeAccessCode, setTasksPolicy, signOutEveryone } from "@/actions/settings";
 import { Button } from "@/components/ui/Button";
 import { FormError } from "@/components/ui/Field";
 import type { TasksPolicy } from "@/lib/constants";
-import type { RoleRow } from "@/lib/database.types";
 import { cn } from "@/lib/cn";
 
 function Ok({ text }: { text: string | null }) {
@@ -192,74 +190,5 @@ export function AccessCodeForm() {
         )}
       </div>
     </div>
-  );
-}
-
-/** Modèles de rôles : mission et « ne fait pas ». */
-export function RoleEditor({ role }: { role: RoleRow }) {
-  const router = useRouter();
-  const [mission, setMission] = useState(role.mission);
-  const [neFaitPas, setNeFaitPas] = useState(role.ne_fait_pas);
-  const [error, setError] = useState<string | null>(null);
-  const [ok, setOk] = useState<string | null>(null);
-  const [pending, start] = useTransition();
-  const dirty = mission !== role.mission || neFaitPas !== role.ne_fait_pas;
-
-  return (
-    <form
-      className="border-line bg-surface space-y-3 rounded-2xl border p-4"
-      onSubmit={(e) => {
-        e.preventDefault();
-        setError(null);
-        setOk(null);
-        start(async () => {
-          const res = await saveRole({ id: role.id, mission, ne_fait_pas: neFaitPas });
-          if (!res.ok) return setError(res.error);
-          setOk("Rôle enregistré.");
-          router.refresh();
-        });
-      }}
-    >
-      <h3 className="font-display text-base font-bold">{role.nom}</h3>
-      <FormError message={error} />
-      <Ok text={ok} />
-      <div className="space-y-1.5">
-        <label htmlFor={`m-${role.id}`} className="text-sm font-medium">
-          Mission
-        </label>
-        <textarea
-          id={`m-${role.id}`}
-          rows={2}
-          value={mission}
-          onChange={(e) => setMission(e.target.value)}
-          maxLength={1000}
-          className="border-line-strong bg-canvas w-full rounded-xl border px-3 py-2.5 text-base"
-        />
-      </div>
-      <div className="space-y-1.5">
-        <label htmlFor={`n-${role.id}`} className="text-sm font-medium">
-          Ce que ce rôle ne fait pas
-        </label>
-        <textarea
-          id={`n-${role.id}`}
-          rows={2}
-          value={neFaitPas}
-          onChange={(e) => setNeFaitPas(e.target.value)}
-          maxLength={1000}
-          placeholder="À renseigner avec l'équipe"
-          className="border-line-strong bg-canvas w-full rounded-xl border px-3 py-2.5 text-base"
-        />
-      </div>
-      <Button
-        type="submit"
-        variant="secondary"
-        loading={pending}
-        disabled={!dirty}
-        className="min-h-12"
-      >
-        <Save aria-hidden className="size-4" />
-        Enregistrer
-      </Button>
-    </form>
   );
 }

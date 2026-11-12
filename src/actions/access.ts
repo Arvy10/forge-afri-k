@@ -119,7 +119,7 @@ export async function enterAdminMode(input: unknown): Promise<ActionResult> {
       );
     }
     await clearFailures("admin", key);
-    await startAdmin();
+    await startAdmin(parsed.data.remember);
     return { ok: true };
   });
 }

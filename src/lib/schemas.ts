@@ -53,6 +53,8 @@ export const adminCodeSchema = z.object({
     .trim()
     .min(1, "Entre le code administrateur.")
     .max(100),
+  /** Rester administrateur 30 jours sur cet appareil (sinon 12 heures). */
+  remember: z.boolean().default(false),
 });
 
 export const newCodeSchema = z
@@ -82,9 +84,24 @@ export type MemberInput = z.input<typeof memberSchema>;
 
 export const roleSchema = z.object({
   id: z.uuid(),
+  nom: z.string().trim().min(1, "Donne un nom au rôle.").max(80, "80 caractères maximum."),
+  /** Rôle principal dont celui-ci est un sous-rôle (facultatif). */
+  parent_id: optionalUuid,
   mission: z.string().trim().max(1000, "1000 caractères maximum.").default(""),
   ne_fait_pas: z.string().trim().max(1000, "1000 caractères maximum.").default(""),
 });
+export const roleCreateSchema = roleSchema.omit({ id: true });
+export type RoleInput = z.input<typeof roleCreateSchema>;
+
+/* ------------------------------ Infos ------------------------------ */
+
+export const infoSchema = z.object({
+  titre: z.string().trim().min(1, "Donne un titre à l'info.").max(160, "160 caractères maximum."),
+  contenu: z.string().max(10000, "10 000 caractères maximum.").default(""),
+  epingle: z.boolean().default(false),
+});
+export type InfoInput = z.input<typeof infoSchema>;
+export const infoUpdateSchema = infoSchema.extend({ id: z.uuid() });
 
 /* ------------------------------ Posts ------------------------------ */
 

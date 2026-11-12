@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import type { MemberLite } from "@/lib/members";
 import { fullName } from "@/lib/members";
+import { roleLabel } from "@/lib/roles";
 import type { MemberRoleRow, MemberRow, RoleRow } from "@/lib/database.types";
 import { db } from "./db";
 
@@ -19,7 +20,8 @@ export const getTeam = cache(async (): Promise<Member[]> => {
     db().from("pc_member_roles").select("member_id, role_id"),
     getRoles(),
   ]);
-  const roleName = new Map(roles.map((r) => [r.id, r.nom]));
+  const roleById = new Map(roles.map((r) => [r.id, r]));
+  const roleName = new Map(roles.map((r) => [r.id, roleLabel(r, roleById)]));
   return ((members ?? []) as MemberRow[]).map((m) => {
     const ids = ((links ?? []) as Pick<MemberRoleRow, "member_id" | "role_id">[])
       .filter((l) => l.member_id === m.id)

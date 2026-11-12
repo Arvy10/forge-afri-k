@@ -30,9 +30,18 @@ export type MemberRow = {
 export type RoleRow = {
   id: string;
   nom: string;
+  parent_id: string | null;
   mission: string;
   ne_fait_pas: string;
   ordre: number;
+  created_at: string;
+  updated_at: string;
+};
+export type InfoRow = {
+  id: string;
+  titre: string;
+  contenu: string;
+  epingle: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -182,6 +191,7 @@ export type Database = {
       pc_projects: Table<ProjectRow, "slug" | "titre">;
       pc_milestones: Table<MilestoneRow, "periode" | "titre">;
       pc_settings: Table<SettingsRow>;
+      pc_infos: Table<InfoRow, "titre">;
       pc_login_attempts: Table<LoginAttemptRow, "ip_hash" | "kind">;
       pc_feature_interests: Table<FeatureInterestRow, "member_id" | "feature">;
     };

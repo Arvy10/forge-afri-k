@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { z } from "zod";
 import { MemberAdminPanel } from "@/components/team/MemberAdminPanel";
+import { RoleCards } from "@/components/team/RoleCards";
 import { TaskGroups } from "@/components/tasks/TaskGroups";
 import { Avatar } from "@/components/ui/Avatar";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -59,7 +60,7 @@ export default async function MemberSpacePage({ params }: { params: Promise<{ id
         </div>
       </header>
 
-      <RoleInfo memberRoleIds={member.roleIds} roles={roles} />
+      <RoleCards roles={roles} memberRoleIds={member.roleIds} who={member.prenom} />
 
       <section
         aria-labelledby="progression"
@@ -96,6 +97,8 @@ export default async function MemberSpacePage({ params }: { params: Promise<{ id
           memberId={id}
           roles={roles}
           actif={member.actif}
+          isSelf={isMe}
+          taskCount={tasks.length}
           initial={{
             prenom: member.prenom,
             nom: member.nom ?? "",
@@ -117,31 +120,5 @@ export default async function MemberSpacePage({ params }: { params: Promise<{ id
         emptyDescription="Ajoute une première tâche avec le bouton ci-dessous."
       />
     </div>
-  );
-}
-
-function RoleInfo({
-  memberRoleIds,
-  roles,
-}: {
-  memberRoleIds: string[];
-  roles: Awaited<ReturnType<typeof getRoles>>;
-}) {
-  const mine = roles.filter((r) => memberRoleIds.includes(r.id));
-  if (mine.length === 0) return null;
-  return (
-    <section aria-label="Rôles" className="mb-6 grid gap-3 sm:grid-cols-2">
-      {mine.map((r) => (
-        <div key={r.id} className="bg-surface border-line rounded-2xl border p-4">
-          <h2 className="font-display text-base font-bold">{r.nom}</h2>
-          {r.mission && <p className="text-ink-muted mt-1 text-sm">{r.mission}</p>}
-          {r.ne_fait_pas && (
-            <p className="mt-2 text-sm">
-              <strong>Ne fait pas :</strong> <span className="text-ink-muted">{r.ne_fait_pas}</span>
-            </p>
-          )}
-        </div>
-      ))}
-    </section>
   );
 }

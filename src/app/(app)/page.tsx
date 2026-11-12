@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Flag,
   ListChecks,
+  Megaphone,
   Radio,
   Users,
 } from "lucide-react";
@@ -31,7 +32,8 @@ import {
   todayISO,
   workWeekISO,
 } from "@/lib/dates";
-import type { ActivityRow, MilestoneRow, PostRow, TaskRow } from "@/lib/database.types";
+import type { ActivityRow, InfoRow, MilestoneRow, PostRow, TaskRow } from "@/lib/database.types";
+import { InfoPreview } from "@/components/home/InfoPreview";
 import { weekProgress, type Progress } from "@/lib/progress";
 import { db } from "@/server/db";
 import { fetchTaskLites } from "@/server/progress";
@@ -74,6 +76,11 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
           <HeroStats today={today} monday={startOfWeekISO(today)} memberId={auth.memberId} />
         </Suspense>
       </HeroBanner>
+
+      {/* Infos : annonces de l'administrateur */}
+      <Suspense fallback={null}>
+        <HomeInfos isAdmin={auth.isAdmin} />
+      </Suspense>
 
       {/* 2. Cette semaine */}
       <section aria-labelledby="cette-semaine" className="mb-7">
@@ -235,6 +242,30 @@ async function HeroStats({
         <HeroStat value={mine} label="tâches ouvertes pour toi" href="/mon-espace" />
       )}
     </>
+  );
+}
+
+async function HomeInfos({ isAdmin }: { isAdmin: boolean }) {
+  const { data } = await db()
+    .from("pc_infos")
+    .select("*")
+    .order("epingle", { ascending: false })
+    .order("updated_at", { ascending: false })
+    .limit(3);
+  const infos = (data ?? []) as InfoRow[];
+  if (infos.length === 0 && !isAdmin) return null;
+  return (
+    <div className="mb-6">
+      <Section
+        title="Infos"
+        icon={Megaphone}
+        id="infos"
+        href="/infos"
+        hrefLabel={isAdmin ? "Gérer" : "Toutes"}
+      >
+        <InfoPreview infos={infos} isAdmin={isAdmin} />
+      </Section>
+    </div>
   );
 }
 

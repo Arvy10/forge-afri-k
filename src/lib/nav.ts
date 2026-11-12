@@ -6,6 +6,7 @@ import {
   Flag,
   House,
   Library,
+  Megaphone,
   ListChecks,
   MessagesSquare,
   Settings,
@@ -30,13 +31,14 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/mon-espace", label: "Mon espace", icon: ClipboardCheck, primary: true },
   { href: "/calendrier", label: "Calendrier", icon: CalendarDays, primary: true },
   { href: "/equipe", label: "Équipe", icon: Users, primary: true },
+  { href: "/infos", label: "Infos", icon: Megaphone },
   { href: "/taches", label: "Toutes les tâches", short: "Tâches", icon: ListChecks },
   { href: "/regles", label: "Règles et guide", icon: BookOpenCheck },
   { href: "/projets", label: "Projets Forge Afri'K", icon: Flag },
   { href: "/bibliotheque", label: "Bibliothèque", icon: Library, soon: true },
   { href: "/reunions", label: "Réunions", icon: MessagesSquare, soon: true },
   { href: "/resultats", label: "Résultats", icon: BarChart3, soon: true },
-  { href: "/reglages", label: "Réglages", icon: Settings, adminOnly: true },
+  { href: "/reglages", label: "Administration", icon: Settings, adminOnly: true },
 ];
 
 export function navFor(isAdmin: boolean): NavItem[] {

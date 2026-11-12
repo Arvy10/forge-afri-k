@@ -13,14 +13,14 @@ Outil de travail d'équipe, pensé pour le **téléphone** : mon espace (mes tâ
 ```
 Code d'accès commun  →  « Qui es-tu ? »  →  Mon espace
         (tout le pôle)      (un clic)
-Mode administrateur : second code, 12 heures (bouton discret dans le menu)
+Mode administrateur : second code ; « Rester administrateur sur cet appareil » = 30 jours, sinon 12 heures
 ```
 
 - Le code est vérifié **côté serveur**. Il n'est jamais dans le code source ni envoyé au navigateur. Il vient de la variable `ACCESS_CODE`, ou — dès que l'admin le change dans **Réglages** — d'une **empreinte bcrypt** stockée dans `pc_settings`.
-- Si le code est bon, le serveur pose un **cookie signé** (`pc_session`, JWT HS256 via `jose`) : `httpOnly`, `secure` (en production), `sameSite=lax`, **30 jours**. Le mode administrateur est un second cookie (`pc_admin`), **12 heures**.
+- Si le code est bon, le serveur pose un **cookie signé** (`pc_session`, JWT HS256 via `jose`) : `httpOnly`, `secure` (en production), `sameSite=lax`, **30 jours**. Le mode administrateur est un second cookie (`pc_admin`) : **30 jours** si la case « Rester administrateur sur cet appareil » est cochée (par défaut), sinon **12 heures**. L'administrateur garde en plus sa propre fiche de membre (tâches, rôle) : choisir « qui il est » ne le fait jamais perdre le mode administrateur.
 - **Limite d'essais** : 5 codes faux → blocage de 5 minutes, **par adresse IP** (enregistrée seulement sous forme d'empreinte salée, table `pc_login_attempts`). Même règle pour le code administrateur.
 - **Changer le code** (Réglages) fait tomber toutes les autres sessions (numéro de version dans le cookie). Même effet avec « Déconnecter tous les appareils ».
-- **Les données ne passent que par le serveur.** Les 14 tables `pc_*` ont la RLS activée, **aucune politique**, et les droits sont retirés à `anon` et `authenticated` : la clé publique du navigateur ne peut rien lire ni écrire. Le serveur utilise la clé `service_role` (jamais exposée au navigateur). Toutes les entrées sont validées par Zod.
+- **Les données ne passent que par le serveur.** Les 15 tables `pc_*` ont la RLS activée, **aucune politique**, et les droits sont retirés à `anon` et `authenticated` : la clé publique du navigateur ne peut rien lire ni écrire. Le serveur utilise la clé `service_role` (jamais exposée au navigateur). Toutes les entrées sont validées par Zod.
 
 ### Limites de sécurité (à lire)
 
@@ -56,12 +56,13 @@ Générer un secret : `openssl rand -base64 48`.
 
 Les migrations sont dans `supabase/migrations/` (à rejouer dans l'ordre, sur un projet vierge) :
 
-| Fichier                        | Contenu                                                                                                                                                                                   |
-| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `20261111000001_pc_schema.sql` | 14 tables `pc_*`, types énumérés, index, triggers (`updated_at`, `fait_le`, journal d'activité), RLS sans politique, droits retirés à `anon`/`authenticated`, bucket privé `pc-livrables` |
-| `20261111000002_pc_seed.sql`   | Les 6 modèles de rôles, le guide, les projets, la frise. **Aucun membre, tâche ni post.**                                                                                                 |
+| Fichier                             | Contenu                                                                                                                                                                                                                   |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `20261111000001_pc_schema.sql`      | 14 tables `pc_*` (15 avec la migration suivante), types énumérés, index, triggers (`updated_at`, `fait_le`, journal d'activité), RLS sans politique, droits retirés à `anon`/`authenticated`, bucket privé `pc-livrables` |
+| `20261111000002_pc_seed.sql`        | Les 6 modèles de rôles, le guide, les projets, la frise. **Aucun membre, tâche ni post.**                                                                                                                                 |
+| `20261112000001_pc_roles_infos.sql` | Sous-rôles (`pc_roles.parent_id`) et table `pc_infos` (annonces de l'administrateur), mêmes protections (RLS sans politique).                                                                                             |
 
-Tables : `pc_members`, `pc_roles`, `pc_member_roles`, `pc_tasks`, `pc_task_deliverables`, `pc_nudges`, `pc_posts`, `pc_activity`, `pc_guide_sections`, `pc_projects`, `pc_milestones`, `pc_settings`, plus `pc_login_attempts` (limite d'essais) et `pc_feature_interests` (bouton « Me prévenir » des pages Bientôt).
+Tables : `pc_members`, `pc_roles`, `pc_member_roles`, `pc_tasks`, `pc_task_deliverables`, `pc_nudges`, `pc_posts`, `pc_activity`, `pc_guide_sections`, `pc_projects`, `pc_milestones`, `pc_settings`, `pc_infos`, plus `pc_login_attempts` (limite d'essais) et `pc_feature_interests` (bouton « Me prévenir » des pages Bientôt).
 
 **Appliquer** : Supabase → _SQL Editor_ → coller chaque fichier, dans l'ordre. (Le projet utilisé par ce dépôt est « forge afri'k » ; les migrations n'ont créé que des tables `pc_*` et ne touchent à rien d'autre.)
 
@@ -109,7 +110,8 @@ npm run typecheck && npm run lint && npm test
 
 ```bash
 createdb pc_dev && psql pc_dev -f tests/rls/supabase_stub.sql \
-  -f supabase/migrations/20261111000001_pc_schema.sql -f supabase/migrations/20261111000002_pc_seed.sql
+  -f supabase/migrations/20261111000001_pc_schema.sql -f supabase/migrations/20261111000002_pc_seed.sql \
+  -f supabase/migrations/20261112000001_pc_roles_infos.sql
 DATABASE_URL=postgres://localhost/pc_dev npm run dev:local-backend
 ```
 
@@ -146,7 +148,10 @@ Le script de build utilise `next build --webpack` : le compilateur par défaut (
 - **Toutes les tâches** : cartes sur mobile, **tableau triable** sur ordinateur, ou Kanban ; filtres par membre, statut, échéance.
 - **Calendrier** : semaine, mois, liste (cartes sur mobile, tableau sur ordinateur).
 - **Règles et guide**, **Projets Forge Afri'K** (modifiables en mode administrateur), pages **Bientôt** (Bibliothèque, Réunions, Résultats).
-- **Réglages** (admin) : qui peut ajouter des tâches, code d'accès, modèles de rôles.
+- **Rôles** (page Équipe → Rôles) : qui fait quoi, avec **sous-rôles** ; plusieurs personnes peuvent porter le même rôle ; les rôles sans titulaire sont signalés. La mission de chaque rôle s'affiche dans **Mon espace**, y compris pour l'administrateur.
+- **Infos** : annonces publiées par l'administrateur (épinglées, avec date de mise à jour) ; les dernières apparaissent aussi sur l'Accueil.
+- **Administration** (page Réglages, admin) : qui peut ajouter des tâches, code d'accès, **créer / modifier / supprimer les rôles** et leurs sous-rôles, **supprimer un membre** (avec ou sans ses tâches ; on ne peut pas supprimer sa propre fiche), export CSV des tâches.
+- **Importer un calendrier** (page Calendrier, admin) : on **colle** le tableau copié depuis Notion, Excel ou Google Sheets (ou un fichier CSV). Aucune IA : des règles lisent les colonnes (par leur titre, ou à défaut par leur contenu) et les dates en français (`16/11`, `16 nov.`, `lundi 16 novembre`…). Si le tableau n'a que « lundi, mardi… », on indique la **semaine de départ** et chaque ligne est placée au bon jour ; un retour à « lundi » passe à la semaine suivante. Les colonnes reconnues se corrigent à la main, un aperçu précède l'import, rien n'est ajouté sans confirmation. Code : `src/lib/paste-import.ts` (testé dans `tests/paste-import.test.ts`).
 
 Les écrans se **rafraîchissent seuls** (toutes les 30 secondes et au retour sur l'onglet). Les cases à cocher et les statuts réagissent immédiatement, avec retour en arrière si le serveur refuse.
 

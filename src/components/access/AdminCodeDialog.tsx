@@ -22,6 +22,7 @@ export function AdminCodeDialog({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState("");
+  const [remember, setRemember] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
@@ -58,7 +59,8 @@ export function AdminCodeDialog({
             </Dialog.Close>
           </div>
           <p id="admin-desc" className="text-ink-muted mb-4 text-sm">
-            Entre le code administrateur. Le mode reste actif 12 heures.
+            Entre le code administrateur. Tu restes administrateur sur cet appareil, sans avoir à
+            ressaisir le code.
           </p>
           <form
             noValidate
@@ -67,7 +69,7 @@ export function AdminCodeDialog({
               e.preventDefault();
               setError(null);
               start(async () => {
-                const res = await enterAdminMode({ code });
+                const res = await enterAdminMode({ code, remember });
                 if (!res.ok) return setError(res.fieldErrors?.code ?? res.error);
                 setOpen(false);
                 if (onDoneHref) router.push(onDoneHref);
@@ -90,6 +92,15 @@ export function AdminCodeDialog({
                 className="border-line-strong bg-surface min-h-12 w-full rounded-xl border px-4 text-base"
               />
             </div>
+            <label className="border-line-strong bg-surface flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-3 text-sm">
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+                className="accent-accent-strong size-5"
+              />
+              Rester administrateur sur cet appareil (30 jours)
+            </label>
             <Button
               type="submit"
               loading={pending}

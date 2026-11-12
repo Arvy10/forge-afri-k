@@ -6,6 +6,8 @@ import { SignJWT, jwtVerify } from "jose";
  */
 export const SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
 export const ADMIN_TTL_SECONDS = 12 * 60 * 60;
+/** « Rester administrateur sur cet appareil » : même durée que la session. */
+export const ADMIN_LONG_TTL_SECONDS = SESSION_TTL_SECONDS;
 
 export type Claims = {
   /** Version du code d'accès : si l'admin change le code, tous les jetons tombent. */
@@ -43,8 +45,8 @@ async function verify(
 
 export const signSessionToken = (c: Claims, secret: string) =>
   sign("session", c, secret, SESSION_TTL_SECONDS);
-export const signAdminToken = (c: Claims, secret: string) =>
-  sign("admin", c, secret, ADMIN_TTL_SECONDS);
+export const signAdminToken = (c: Claims, secret: string, ttl: number = ADMIN_TTL_SECONDS) =>
+  sign("admin", c, secret, ttl);
 export const verifySessionToken = (t: string | undefined, secret: string | undefined) =>
   verify("session", t, secret);
 export const verifyAdminToken = (t: string | undefined, secret: string | undefined) =>

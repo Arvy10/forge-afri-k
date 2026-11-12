@@ -27,6 +27,7 @@ const TABLES = [
   "pc_settings",
   "pc_login_attempts",
   "pc_feature_interests",
+  "pc_infos",
 ];
 
 describe.skipIf(!url)("schéma pc_* et sécurité", () => {
@@ -40,6 +41,7 @@ describe.skipIf(!url)("schéma pc_* et sécurité", () => {
     await db.query(read("tests/rls/supabase_stub.sql"));
     await db.query(read("supabase/migrations/20261111000001_pc_schema.sql"));
     await db.query(read("supabase/migrations/20261111000002_pc_seed.sql"));
+    await db.query(read("supabase/migrations/20261112000001_pc_roles_infos.sql"));
   });
   afterAll(async () => {
     await db?.end();
@@ -54,7 +56,7 @@ describe.skipIf(!url)("schéma pc_* et sécurité", () => {
     }
   };
 
-  it("la RLS est active sur les 14 tables pc_*", async () => {
+  it("la RLS est active sur les 15 tables pc_*", async () => {
     const r = await db.query(
       "select count(*)::int as n from pg_tables where schemaname='public' and tablename like 'pc\\_%' and rowsecurity",
     );
@@ -187,5 +189,43 @@ describe.skipIf(!url)("schéma pc_* et sécurité", () => {
     );
     expect(new Set(nums).size).toBe(nums.length);
     expect(nums).toEqual([...nums].sort((a, b) => a - b));
+  });
+
+  it("sous-rôles : un rôle ne peut pas être son propre parent, et la suppression du parent détache les enfants", async () => {
+    const parent = (
+      await db.query("insert into public.pc_roles (nom) values ('Parent test') returning id")
+    ).rows[0].id;
+    const child = (
+      await db.query(
+        "insert into public.pc_roles (nom, parent_id) values ('Enfant test', $1) returning id",
+        [parent],
+      )
+    ).rows[0].id;
+    await expect(
+      db.query("update public.pc_roles set parent_id = id where id = $1", [parent]),
+    ).rejects.toThrow();
+    await db.query("delete from public.pc_roles where id = $1", [parent]);
+    const after = await db.query("select parent_id from public.pc_roles where id = $1", [child]);
+    expect(after.rows[0].parent_id).toBeNull();
+    await db.query("delete from public.pc_roles where id = $1", [child]);
+  });
+
+  it("infos : titre obligatoire, date de mise à jour automatique", async () => {
+    await expect(
+      db.query("insert into public.pc_infos (titre, contenu) values ('', 'x')"),
+    ).rejects.toThrow();
+    const id = (
+      await db.query(
+        "insert into public.pc_infos (titre, contenu) values ('Réunion', 'Jeudi') returning id",
+      )
+    ).rows[0].id;
+    const before = (await db.query("select updated_at from public.pc_infos where id = $1", [id]))
+      .rows[0].updated_at as Date;
+    await db.query("select pg_sleep(0.05)");
+    await db.query("update public.pc_infos set contenu = 'Vendredi' where id = $1", [id]);
+    const after = (await db.query("select updated_at from public.pc_infos where id = $1", [id]))
+      .rows[0].updated_at as Date;
+    expect(after.getTime()).toBeGreaterThan(before.getTime());
+    await db.query("delete from public.pc_infos where id = $1", [id]);
   });
 });

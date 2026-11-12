@@ -3,11 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { ActionError, invalid, safeAction, type ActionResult } from "@/lib/action";
-import { defaultPrepDate } from "@/lib/dates";
+import { defaultPrepDate, isISODate } from "@/lib/dates";
 import { failWith } from "@/lib/db-errors";
 import type { PostRow } from "@/lib/database.types";
 import { fullName } from "@/lib/members";
-import { importPostsCsv, type ImportReport } from "@/lib/post-csv";
+import { FIELD_KEYS, importPostsText, type FieldKey, type ImportReport } from "@/lib/paste-import";
 import { postMoveSchema, postSchema, postStatusSchema, type PostValues } from "@/lib/schemas";
 import { actionContext } from "@/server/session";
 
@@ -130,22 +130,41 @@ export async function deletePost(id: string): Promise<ActionResult> {
 
 /* ------------------------------- Import CSV (admin) ------------------------------- */
 
+const importOptionsSchema = z
+  .object({
+    mapping: z.array(z.enum(FIELD_KEYS).nullable()).max(60).optional(),
+    weekStart: z
+      .string()
+      .refine((v) => isISODate(v), "Date de départ invalide.")
+      .nullish(),
+  })
+  .optional();
+
 export async function importPosts(
   csv: string,
   dryRun: boolean,
+  options?: { mapping?: (FieldKey | null)[]; weekStart?: string | null },
 ): Promise<ActionResult<ImportReport & { inserted: number }>> {
   return safeAction<ImportReport & { inserted: number }>(async () => {
     const { db, memberId } = await actionContext({ admin: true });
-    if (typeof csv !== "string" || csv.length === 0) throw new ActionError("Le fichier est vide.");
-    if (csv.length > 2_000_000) throw new ActionError("Le fichier est trop gros (2 Mo maximum).");
+    if (typeof csv !== "string" || csv.trim().length === 0)
+      throw new ActionError("Le texte est vide.");
+    if (csv.length > 2_000_000) throw new ActionError("Le texte est trop gros (2 Mo maximum).");
+    const parsedOptions = importOptionsSchema.safeParse(options);
+    if (!parsedOptions.success) throw new ActionError("Réglages d'import invalides.");
+    const opts = parsedOptions.data ?? {};
 
     const { data: members } = await db
       .from("pc_members")
       .select("id, prenom, nom")
       .eq("actif", true);
-    const report = importPostsCsv(
+    const report = importPostsText(
       csv,
       (members ?? []).map((m) => ({ id: m.id, full_name: fullName(m), email: "" })),
+      {
+        mapping: opts.mapping,
+        weekStart: opts.weekStart && isISODate(opts.weekStart) ? opts.weekStart : null,
+      },
     );
     if (report.fatal) throw new ActionError(report.fatal);
 

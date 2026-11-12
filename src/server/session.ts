@@ -8,6 +8,7 @@ import { envProblems, serverEnv } from "@/lib/env";
 import { db } from "./db";
 import {
   ADMIN_COOKIE,
+  ADMIN_LONG_TTL_SECONDS,
   ADMIN_TTL_SECONDS,
   ME_COOKIE,
   SESSION_COOKIE,
@@ -105,14 +106,17 @@ export async function startSession(memberId?: string | null): Promise<void> {
   if (memberId) store.set(ME_COOKIE, memberId, { ...cookieBase(), maxAge: 365 * 24 * 60 * 60 });
 }
 
-export async function startAdmin(): Promise<void> {
+/** Mode administrateur : 12 heures, ou 30 jours si la personne choisit de rester administrateur sur cet appareil. */
+export async function startAdmin(remember = false): Promise<void> {
   const settings = await getSettings();
   const store = await cookies();
+  const ttl = remember ? ADMIN_LONG_TTL_SECONDS : ADMIN_TTL_SECONDS;
   const token = await signAdminToken(
     { v: settings?.code_version ?? 1 },
     serverEnv().SESSION_SECRET,
+    ttl,
   );
-  store.set(ADMIN_COOKIE, token, { ...cookieBase(), maxAge: ADMIN_TTL_SECONDS });
+  store.set(ADMIN_COOKIE, token, { ...cookieBase(), maxAge: ttl });
 }
 
 export async function endAdmin(): Promise<void> {
