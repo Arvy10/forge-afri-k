@@ -3,6 +3,7 @@
 import { hash } from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { invalid, safeAction, type ActionResult, ActionError } from "@/lib/action";
+import { normalizeCode } from "@/lib/code";
 import { newCodeSchema, settingsSchema } from "@/lib/schemas";
 import { actionContext, startAdmin, startSession } from "@/server/session";
 
@@ -33,7 +34,7 @@ export async function changeAccessCode(input: unknown): Promise<ActionResult> {
     const parsed = newCodeSchema.safeParse(input);
     if (!parsed.success) return invalid(parsed.error);
     const { db, auth, memberId } = await actionContext({ admin: true });
-    const code_hash = await hash(parsed.data.code, 10);
+    const code_hash = await hash(normalizeCode(parsed.data.code), 10);
     const { error } = await db
       .from("pc_settings")
       .update({ code_hash, code_version: (auth.settings?.code_version ?? 1) + 1 })

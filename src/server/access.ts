@@ -2,6 +2,7 @@ import "server-only";
 import { compare } from "bcryptjs";
 import { createHash, timingSafeEqual } from "node:crypto";
 import { headers } from "next/headers";
+import { normalizeCode } from "@/lib/code";
 import { serverEnv } from "@/lib/env";
 import { db } from "./db";
 import { afterFailure, lockedMinutes, triesLeft, type AttemptState } from "./attempts";
@@ -14,15 +15,16 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 /** Code d'accès : haché en base s'il a été changé depuis « Réglages », sinon variable ACCESS_CODE. */
-export async function checkAccessCode(input: string): Promise<boolean> {
+export async function checkAccessCode(raw: string): Promise<boolean> {
+  const input = normalizeCode(raw);
   const { data } = await db().from("pc_settings").select("code_hash").eq("id", true).maybeSingle();
   const hash = data?.code_hash;
   if (hash) return compare(input, hash);
-  return safeEqual(input, serverEnv().ACCESS_CODE);
+  return safeEqual(input, normalizeCode(serverEnv().ACCESS_CODE));
 }
 
 export function checkAdminCode(input: string): boolean {
-  return safeEqual(input, serverEnv().ADMIN_CODE);
+  return safeEqual(normalizeCode(input), normalizeCode(serverEnv().ADMIN_CODE));
 }
 
 /** Adresse de l'appelant, anonymisée : on ne garde qu'une empreinte salée. */
