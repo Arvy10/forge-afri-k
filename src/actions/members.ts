@@ -61,22 +61,42 @@ export async function saveMember(id: string, input: unknown): Promise<ActionResu
       .eq("id", id);
     if (error) failWith(error, "Impossible d'enregistrer ce membre.");
 
-    const { data: current } = await db
+    await syncMemberRoles(db, id, role_ids);
+    refresh();
+    return { ok: true };
+  });
+}
+
+type Db = Awaited<ReturnType<typeof actionContext>>["db"];
+
+/** Fait correspondre les rôles d'un membre à la liste donnée (ajoute ce qui manque, retire le reste). */
+async function syncMemberRoles(db: Db, memberId: string, roleIds: string[]) {
+  const { data: current } = await db
+    .from("pc_member_roles")
+    .select("role_id")
+    .eq("member_id", memberId);
+  const have = new Set((current ?? []).map((r) => r.role_id));
+  const want = new Set(roleIds);
+  const toAdd = [...want].filter((r) => !have.has(r));
+  const toRemove = [...have].filter((r) => !want.has(r));
+  if (toRemove.length)
+    await db.from("pc_member_roles").delete().eq("member_id", memberId).in("role_id", toRemove);
+  if (toAdd.length) {
+    const { error } = await db
       .from("pc_member_roles")
-      .select("role_id")
-      .eq("member_id", id);
-    const have = new Set((current ?? []).map((r) => r.role_id));
-    const want = new Set(role_ids);
-    const toAdd = [...want].filter((r) => !have.has(r));
-    const toRemove = [...have].filter((r) => !want.has(r));
-    if (toRemove.length)
-      await db.from("pc_member_roles").delete().eq("member_id", id).in("role_id", toRemove);
-    if (toAdd.length) {
-      const { error: e2 } = await db
-        .from("pc_member_roles")
-        .insert(toAdd.map((role_id) => ({ member_id: id, role_id })));
-      if (e2) failWith(e2, "Impossible de modifier les rôles.");
-    }
+      .insert(toAdd.map((role_id) => ({ member_id: memberId, role_id })));
+    if (error) failWith(error, "Impossible de modifier les rôles.");
+  }
+}
+
+/** Chacun choisit ses propres rôles (les tâches qui l'intéressent). Plusieurs personnes peuvent avoir le même. */
+export async function setMyRoles(roleIds: unknown): Promise<ActionResult> {
+  return safeAction(async () => {
+    const parsed = z.array(z.uuid()).max(60).safeParse(roleIds);
+    if (!parsed.success) throw new ActionError("Choix de rôles invalide.");
+    const { db, memberId } = await actionContext();
+    if (!memberId) throw new ActionError("Choisis d'abord qui tu es.");
+    await syncMemberRoles(db, memberId, [...new Set(parsed.data)]);
     refresh();
     return { ok: true };
   });

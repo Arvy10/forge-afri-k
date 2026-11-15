@@ -4,6 +4,7 @@ import { UserRound } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ProgressBar } from "@/components/ui/ProgressBar";
+import { MyRolesPicker } from "@/components/team/MyRolesPicker";
 import { RoleCards } from "@/components/team/RoleCards";
 import { TaskGroups } from "@/components/tasks/TaskGroups";
 import { todayISO } from "@/lib/dates";
@@ -45,6 +46,9 @@ export default async function MySpacePage() {
     getRoles(),
   ]);
   const me = team.find((m) => m.id === member.id);
+  const holders: Record<string, number> = {};
+  for (const m of team.filter((x) => x.actif))
+    for (const id of m.roleIds) holders[id] = (holders[id] ?? 0) + 1;
   const progress = weekProgress(tasks, today);
   const canAdd = auth.isAdmin || auth.settings?.tasks_add_policy !== "admin";
 
@@ -63,6 +67,9 @@ export default async function MySpacePage() {
       </header>
 
       <RoleCards roles={roles} memberRoleIds={me?.roleIds ?? []} />
+      <div className="-mt-3 mb-6">
+        <MyRolesPicker roles={roles} mine={me?.roleIds ?? []} holders={holders} />
+      </div>
 
       <section
         aria-labelledby="progression"

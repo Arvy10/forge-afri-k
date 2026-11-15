@@ -42,6 +42,7 @@ describe.skipIf(!url)("schéma pc_* et sécurité", () => {
     await db.query(read("supabase/migrations/20261111000001_pc_schema.sql"));
     await db.query(read("supabase/migrations/20261111000002_pc_seed.sql"));
     await db.query(read("supabase/migrations/20261112000001_pc_roles_infos.sql"));
+    await db.query(read("supabase/migrations/20261115000001_pc_roles_domaines.sql"));
   });
   afterAll(async () => {
     await db?.end();
@@ -97,7 +98,7 @@ describe.skipIf(!url)("schéma pc_* et sécurité", () => {
       await n("pc_guide_sections"),
       await n("pc_projects"),
       await n("pc_milestones"),
-    ]).toEqual([6, 8, 6, 5]);
+    ]).toEqual([38, 8, 6, 5]); // 6 rôles de départ + 8 domaines + 24 sous-rôles
   });
 
   it("le bucket des livrables est privé", async () => {
@@ -227,5 +228,25 @@ describe.skipIf(!url)("schéma pc_* et sécurité", () => {
       .rows[0].updated_at as Date;
     expect(after.getTime()).toBeGreaterThan(before.getTime());
     await db.query("delete from public.pc_infos where id = $1", [id]);
+  });
+
+  it("domaines : rejouer la migration ne crée aucun doublon et garde les titulaires", async () => {
+    const before = (await db.query("select count(*)::int as n from public.pc_roles")).rows[0].n;
+    await db.query(read("supabase/migrations/20261115000001_pc_roles_domaines.sql"));
+    const after = (await db.query("select count(*)::int as n from public.pc_roles")).rows[0].n;
+    expect(after).toBe(before);
+    const r = await db.query(
+      "select c.nom as enfant, p.nom as parent from public.pc_roles c join public.pc_roles p on p.id = c.parent_id where c.nom in ('Vidéo','Copywriter','Communauté')",
+    );
+    expect(Object.fromEntries(r.rows.map((x) => [x.enfant, x.parent]))).toEqual({
+      Vidéo: "Photos et vidéos",
+      Copywriter: "Rédaction",
+      Communauté: "Gestion des réseaux sociaux",
+    });
+    // un seul niveau : aucun sous-rôle n'a lui-même de sous-rôles
+    const deep = await db.query(
+      "select count(*)::int as n from public.pc_roles c join public.pc_roles p on p.id = c.parent_id where p.parent_id is not null",
+    );
+    expect(deep.rows[0].n).toBe(0);
   });
 });

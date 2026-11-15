@@ -56,11 +56,12 @@ Générer un secret : `openssl rand -base64 48`.
 
 Les migrations sont dans `supabase/migrations/` (à rejouer dans l'ordre, sur un projet vierge) :
 
-| Fichier                             | Contenu                                                                                                                                                                                                                   |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `20261111000001_pc_schema.sql`      | 14 tables `pc_*` (15 avec la migration suivante), types énumérés, index, triggers (`updated_at`, `fait_le`, journal d'activité), RLS sans politique, droits retirés à `anon`/`authenticated`, bucket privé `pc-livrables` |
-| `20261111000002_pc_seed.sql`        | Les 6 modèles de rôles, le guide, les projets, la frise. **Aucun membre, tâche ni post.**                                                                                                                                 |
-| `20261112000001_pc_roles_infos.sql` | Sous-rôles (`pc_roles.parent_id`) et table `pc_infos` (annonces de l'administrateur), mêmes protections (RLS sans politique).                                                                                             |
+| Fichier                                | Contenu                                                                                                                                                                                                                   |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `20261111000001_pc_schema.sql`         | 14 tables `pc_*` (15 avec la migration suivante), types énumérés, index, triggers (`updated_at`, `fait_le`, journal d'activité), RLS sans politique, droits retirés à `anon`/`authenticated`, bucket privé `pc-livrables` |
+| `20261111000002_pc_seed.sql`           | Les 6 modèles de rôles, le guide, les projets, la frise. **Aucun membre, tâche ni post.**                                                                                                                                 |
+| `20261115000001_pc_roles_domaines.sql` | Les 8 domaines du pôle (Photos et vidéos, Montage vidéo, Création d'affiches, Rédaction, Réseaux sociaux, Calendrier éditorial, Relations médias, Suivi des publications) avec 24 sous-rôles ; rejouable sans doublon.    |
+| `20261112000001_pc_roles_infos.sql`    | Sous-rôles (`pc_roles.parent_id`) et table `pc_infos` (annonces de l'administrateur), mêmes protections (RLS sans politique).                                                                                             |
 
 Tables : `pc_members`, `pc_roles`, `pc_member_roles`, `pc_tasks`, `pc_task_deliverables`, `pc_nudges`, `pc_posts`, `pc_activity`, `pc_guide_sections`, `pc_projects`, `pc_milestones`, `pc_settings`, `pc_infos`, plus `pc_login_attempts` (limite d'essais) et `pc_feature_interests` (bouton « Me prévenir » des pages Bientôt).
 
@@ -111,7 +112,8 @@ npm run typecheck && npm run lint && npm test
 ```bash
 createdb pc_dev && psql pc_dev -f tests/rls/supabase_stub.sql \
   -f supabase/migrations/20261111000001_pc_schema.sql -f supabase/migrations/20261111000002_pc_seed.sql \
-  -f supabase/migrations/20261112000001_pc_roles_infos.sql
+  -f supabase/migrations/20261112000001_pc_roles_infos.sql \
+  -f supabase/migrations/20261115000001_pc_roles_domaines.sql
 DATABASE_URL=postgres://localhost/pc_dev npm run dev:local-backend
 ```
 
@@ -148,7 +150,7 @@ Le script de build utilise `next build --webpack` : le compilateur par défaut (
 - **Toutes les tâches** : cartes sur mobile, **tableau triable** sur ordinateur, ou Kanban ; filtres par membre, statut, échéance.
 - **Calendrier** : semaine, mois, liste (cartes sur mobile, tableau sur ordinateur).
 - **Règles et guide**, **Projets Forge Afri'K** (modifiables en mode administrateur), pages **Bientôt** (Bibliothèque, Réunions, Résultats).
-- **Rôles** (page Équipe → Rôles) : qui fait quoi, avec **sous-rôles** ; plusieurs personnes peuvent porter le même rôle ; les rôles sans titulaire sont signalés. La mission de chaque rôle s'affiche dans **Mon espace**, y compris pour l'administrateur.
+- **Rôles** (page Équipe → Rôles) : qui fait quoi, avec **sous-rôles** ; plusieurs personnes peuvent porter le même rôle ; les rôles sans titulaire sont signalés. **Chacun choisit ses rôles** dans Mon espace (« Choisir mes rôles »). La mission de chaque rôle s'affiche dans **Mon espace**, y compris pour l'administrateur.
 - **Infos** : annonces publiées par l'administrateur (épinglées, avec date de mise à jour) ; les dernières apparaissent aussi sur l'Accueil.
 - **Administration** (page Réglages, admin) : qui peut ajouter des tâches, code d'accès, **créer / modifier / supprimer les rôles** et leurs sous-rôles, **supprimer un membre** (avec ou sans ses tâches ; on ne peut pas supprimer sa propre fiche), export CSV des tâches.
 - **Importer un calendrier** (page Calendrier, admin) : on **colle** le tableau copié depuis Notion, Excel ou Google Sheets (ou directement un **fichier Excel .xlsx** — première feuille — ou CSV ; les lignes de titre au-dessus du tableau sont ignorées). Aucune IA : des règles lisent les colonnes (par leur titre, ou à défaut par leur contenu) et les dates en français (`16/11`, `16 nov.`, `lundi 16 novembre`…). Si le tableau n'a que « lundi, mardi… », on indique la **semaine de départ** et chaque ligne est placée au bon jour ; un retour à « lundi » passe à la semaine suivante. Les colonnes reconnues se corrigent à la main, un aperçu précède l'import, rien n'est ajouté sans confirmation. Code : `src/lib/paste-import.ts` (testé dans `tests/paste-import.test.ts`).
