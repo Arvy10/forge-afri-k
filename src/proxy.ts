@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "./server/jwt";
 
-/** Seule page accessible sans code : l'écran du code d'accès. Tout le reste est privé. */
-const PUBLIC_PATHS = ["/acces"];
+/** Pages accessibles sans code : la présentation et l'écran du code d'accès. Tout le reste est privé. */
+const PUBLIC_PATHS = ["/acces", "/bienvenue"];
 
 /**
  * Premier filtre : un jeton signé valide est exigé. (La version du code d'accès, stockée en base,
@@ -15,6 +15,13 @@ export async function proxy(request: NextRequest) {
     request.cookies.get(SESSION_COOKIE)?.value,
     process.env.SESSION_SECRET,
   );
+
+  // Un visiteur sans cookie qui ouvre le lien du site voit la présentation (l'adresse reste « / »).
+  if (!claims && pathname === "/") {
+    const to = request.nextUrl.clone();
+    to.pathname = "/bienvenue";
+    return NextResponse.rewrite(to);
+  }
 
   if (!claims && !isPublic) {
     const to = request.nextUrl.clone();

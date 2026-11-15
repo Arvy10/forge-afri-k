@@ -16,6 +16,7 @@ Code d'accès commun  →  « Qui es-tu ? »  →  Mon espace
 Mode administrateur : second code ; « Rester administrateur sur cet appareil » = 30 jours, sinon 12 heures
 ```
 
+- **Page d'accueil publique** (`/`, servie par `/bienvenue`) : un visiteur sans cookie voit une seule section de présentation (logo, titre qui change, boutons « Connexion » et « Entrer dans le pôle » vers l'écran du code). Aucune donnée privée n'y figure ; avec un cookie valide, `/` reste l'accueil de l'espace.
 - Le code est vérifié **côté serveur**. Il n'est jamais dans le code source ni envoyé au navigateur. Il vient de la variable `ACCESS_CODE`, ou — dès que l'admin le change dans **Réglages** — d'une **empreinte bcrypt** stockée dans `pc_settings`.
 - Si le code est bon, le serveur pose un **cookie signé** (`pc_session`, JWT HS256 via `jose`) : `httpOnly`, `secure` (en production), `sameSite=lax`, **30 jours**. Le mode administrateur est un second cookie (`pc_admin`) : **30 jours** si la case « Rester administrateur sur cet appareil » est cochée (par défaut), sinon **12 heures**. L'administrateur garde en plus sa propre fiche de membre (tâches, rôle) : choisir « qui il est » ne le fait jamais perdre le mode administrateur.
 - **Limite d'essais** : 5 codes faux → blocage de 5 minutes, **par adresse IP** (enregistrée seulement sous forme d'empreinte salée, table `pc_login_attempts`). Même règle pour le code administrateur.

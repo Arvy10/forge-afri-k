@@ -14,7 +14,6 @@ beforeAll(() => {
 
 describe("accès aux pages et aux données : cookie signé obligatoire", () => {
   const PRIVATE = [
-    "/",
     "/calendrier",
     "/equipe",
     "/mon-espace",
@@ -29,6 +28,24 @@ describe("accès aux pages et aux données : cookie signé obligatoire", () => {
     const res = await proxy(req(path));
     expect(res.status).toBe(307);
     expect(new URL(res.headers.get("location")!).pathname).toBe("/acces");
+  });
+
+  it("sans cookie, l'adresse « / » montre la présentation (réécriture, pas de redirection)", async () => {
+    const res = await proxy(req("/"));
+    expect(res.headers.get("location")).toBeNull();
+    expect(new URL(res.headers.get("x-middleware-rewrite")!).pathname).toBe("/bienvenue");
+  });
+
+  it("la présentation est publique, mais pas les pages privées", async () => {
+    expect((await proxy(req("/bienvenue"))).headers.get("location")).toBeNull();
+    expect((await proxy(req("/equipe"))).headers.get("location")).not.toBeNull();
+  });
+
+  it("avec un cookie valide, « / » reste l'accueil de l'espace", async () => {
+    const token = await signSessionToken({ v: 1 }, SECRET);
+    const res = await proxy(req("/", `pc_session=${token}`));
+    expect(res.headers.get("x-middleware-rewrite")).toBeNull();
+    expect(res.headers.get("location")).toBeNull();
   });
 
   it("garde la page demandée pour y revenir après la saisie du code", async () => {
@@ -77,7 +94,7 @@ describe("accès aux pages et aux données : cookie signé obligatoire", () => {
   it("sans SESSION_SECRET configuré, personne n'entre", async () => {
     const token = await signSessionToken({ v: 1 }, SECRET);
     delete process.env.SESSION_SECRET;
-    const res = await proxy(req("/", `pc_session=${token}`));
+    const res = await proxy(req("/equipe", `pc_session=${token}`));
     process.env.SESSION_SECRET = SECRET;
     expect(res.status).toBe(307);
   });
