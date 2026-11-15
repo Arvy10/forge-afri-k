@@ -10,7 +10,12 @@ import { getRoles, getTeam } from "@/server/team";
 
 export const metadata: Metadata = { title: "Administration" };
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ "ajout-role"?: string }>;
+}) {
+  const { "ajout-role": ajoutRole } = await searchParams;
   const auth = await requireSession();
   if (!auth.isAdmin) redirect("/");
   const [roles, team] = await Promise.all([getRoles(), getTeam()]);
@@ -71,7 +76,7 @@ export default async function SettingsPage() {
             exemple « Vidéo › Montage »). La mission s&apos;affiche dans l&apos;espace de chaque
             personne qui porte le rôle ; on l&apos;attribue depuis la fiche du membre.
           </p>
-          <RoleManager roles={roles} holders={holders} />
+          <RoleManager roles={roles} holders={holders} startAdding={ajoutRole === "1"} />
         </section>
 
         <section aria-labelledby="r-taches" className={card}>

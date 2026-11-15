@@ -198,11 +198,14 @@ function RoleForm({
 export function RoleManager({
   roles,
   holders,
+  startAdding = false,
 }: {
   roles: RoleRow[];
   holders: Record<string, number>;
+  /** Ouvre directement le formulaire « Nouveau rôle ». */
+  startAdding?: boolean;
 }) {
-  const [adding, setAdding] = useState(false);
+  const [adding, setAdding] = useState(startAdding);
   const tree = roleTree(roles);
   return (
     <div className="space-y-4">

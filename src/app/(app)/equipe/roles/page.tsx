@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Settings, TriangleAlert } from "lucide-react";
+import { Plus, Settings, TriangleAlert } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { roleTree } from "@/lib/roles";
@@ -66,13 +66,22 @@ export default async function RolesPage() {
         description="Qui fait quoi. Plusieurs personnes peuvent porter le même rôle, et un rôle peut avoir des sous-rôles."
         actions={
           auth.isAdmin ? (
-            <Link
-              href="/reglages"
-              className="border-line-strong bg-surface hover:bg-surface-2 inline-flex min-h-12 items-center gap-2 rounded-lg border px-4 text-sm font-semibold"
-            >
-              <Settings aria-hidden className="size-4" />
-              Gérer les rôles
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href="/reglages?ajout-role=1#r-roles"
+                className="bg-accent-strong text-on-accent inline-flex min-h-12 items-center gap-2 rounded-lg px-4 text-sm font-semibold"
+              >
+                <Plus aria-hidden className="size-4" />
+                Ajouter un rôle
+              </Link>
+              <Link
+                href="/reglages#r-roles"
+                className="border-line-strong bg-surface hover:bg-surface-2 inline-flex min-h-12 items-center gap-2 rounded-lg border px-4 text-sm font-semibold"
+              >
+                <Settings aria-hidden className="size-4" />
+                Modifier / supprimer
+              </Link>
+            </div>
           ) : undefined
         }
       />
