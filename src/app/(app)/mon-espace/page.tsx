@@ -11,7 +11,7 @@ import { todayISO } from "@/lib/dates";
 import { weekProgress } from "@/lib/progress";
 import { requireSession } from "@/server/session";
 import { loadTaskPage } from "@/server/task-page";
-import { getRoles, getTeam } from "@/server/team";
+import { getRoles, getRoleTasks, getTeam } from "@/server/team";
 
 export const metadata: Metadata = { title: "Mon espace" };
 
@@ -40,10 +40,11 @@ export default async function MySpacePage() {
   }
 
   const today = todayISO();
-  const [{ tasks, postOptions }, team, roles] = await Promise.all([
+  const [{ tasks, postOptions }, team, roles, roleTasks] = await Promise.all([
     loadTaskPage({ memberId: member.id }),
     getTeam(),
     getRoles(),
+    getRoleTasks(),
   ]);
   const me = team.find((m) => m.id === member.id);
   const holders: Record<string, number> = {};
@@ -66,7 +67,16 @@ export default async function MySpacePage() {
         </div>
       </header>
 
-      <RoleCards roles={roles} memberRoleIds={me?.roleIds ?? []} />
+      <RoleCards
+        roles={roles}
+        memberRoleIds={me?.roleIds ?? []}
+        roleTasks={roleTasks}
+        taskTarget={
+          auth.isAdmin || auth.settings?.tasks_add_policy !== "admin"
+            ? { memberId: null, label: "de mon espace" }
+            : undefined
+        }
+      />
       <div className="-mt-3 mb-6">
         <MyRolesPicker roles={roles} mine={me?.roleIds ?? []} holders={holders} />
       </div>

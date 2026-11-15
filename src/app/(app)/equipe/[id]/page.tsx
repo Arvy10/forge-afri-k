@@ -12,7 +12,7 @@ import { todayISO } from "@/lib/dates";
 import { weekProgress } from "@/lib/progress";
 import { requireSession } from "@/server/session";
 import { loadTaskPage } from "@/server/task-page";
-import { getRoles, getTeam } from "@/server/team";
+import { getRoles, getRoleTasks, getTeam } from "@/server/team";
 
 export const metadata: Metadata = { title: "Espace d'un membre" };
 
@@ -25,9 +25,10 @@ export default async function MemberSpacePage({ params }: { params: Promise<{ id
   if (!member || (!member.actif && !auth.isAdmin)) notFound();
 
   const today = todayISO();
-  const [{ tasks, postOptions }, roles] = await Promise.all([
+  const [{ tasks, postOptions }, roles, roleTasks] = await Promise.all([
     loadTaskPage({ memberId: id }),
     getRoles(),
+    getRoleTasks(),
   ]);
   const progress = weekProgress(tasks, today);
   const isMe = auth.memberId === id;
@@ -60,7 +61,15 @@ export default async function MemberSpacePage({ params }: { params: Promise<{ id
         </div>
       </header>
 
-      <RoleCards roles={roles} memberRoleIds={member.roleIds} who={member.prenom} />
+      <RoleCards
+        roles={roles}
+        memberRoleIds={member.roleIds}
+        who={member.prenom}
+        roleTasks={roleTasks}
+        taskTarget={
+          auth.isAdmin ? { memberId: member.id, label: `de ${member.prenom}` } : undefined
+        }
+      />
 
       <section
         aria-labelledby="progression"

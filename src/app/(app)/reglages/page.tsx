@@ -6,7 +6,7 @@ import { RoleManager } from "@/components/settings/RoleManager";
 import { AccessCodeForm, TasksPolicyForm } from "@/components/settings/SettingsForms";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { requireSession } from "@/server/session";
-import { getRoles, getTeam } from "@/server/team";
+import { getRoles, getRoleTasks, getTeam } from "@/server/team";
 
 export const metadata: Metadata = { title: "Administration" };
 
@@ -18,7 +18,7 @@ export default async function SettingsPage({
   const { "ajout-role": ajoutRole } = await searchParams;
   const auth = await requireSession();
   if (!auth.isAdmin) redirect("/");
-  const [roles, team] = await Promise.all([getRoles(), getTeam()]);
+  const [roles, team, roleTasks] = await Promise.all([getRoles(), getTeam(), getRoleTasks()]);
 
   // Combien de personnes portent chaque rôle (membres actifs).
   const holders: Record<string, number> = {};
@@ -76,7 +76,12 @@ export default async function SettingsPage({
             exemple « Vidéo › Montage »). La mission s&apos;affiche dans l&apos;espace de chaque
             personne qui porte le rôle ; on l&apos;attribue depuis la fiche du membre.
           </p>
-          <RoleManager roles={roles} holders={holders} startAdding={ajoutRole === "1"} />
+          <RoleManager
+            roles={roles}
+            holders={holders}
+            roleTasks={roleTasks}
+            startAdding={ajoutRole === "1"}
+          />
         </section>
 
         <section aria-labelledby="r-taches" className={card}>

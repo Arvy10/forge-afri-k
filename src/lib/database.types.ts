@@ -45,6 +45,14 @@ export type InfoRow = {
   created_at: string;
   updated_at: string;
 };
+export type RoleTaskRow = {
+  id: string;
+  role_id: string;
+  titre: string;
+  ordre: number;
+  created_at: string;
+  updated_at: string;
+};
 export type MemberRoleRow = { member_id: string; role_id: string; created_at: string };
 
 export type PostRow = {
@@ -192,6 +200,7 @@ export type Database = {
       pc_milestones: Table<MilestoneRow, "periode" | "titre">;
       pc_settings: Table<SettingsRow>;
       pc_infos: Table<InfoRow, "titre">;
+      pc_role_tasks: Table<RoleTaskRow, "role_id" | "titre">;
       pc_login_attempts: Table<LoginAttemptRow, "ip_hash" | "kind">;
       pc_feature_interests: Table<FeatureInterestRow, "member_id" | "feature">;
     };

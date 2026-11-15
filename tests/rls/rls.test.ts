@@ -28,6 +28,7 @@ const TABLES = [
   "pc_login_attempts",
   "pc_feature_interests",
   "pc_infos",
+  "pc_role_tasks",
 ];
 
 describe.skipIf(!url)("schéma pc_* et sécurité", () => {
@@ -43,6 +44,7 @@ describe.skipIf(!url)("schéma pc_* et sécurité", () => {
     await db.query(read("supabase/migrations/20261111000002_pc_seed.sql"));
     await db.query(read("supabase/migrations/20261112000001_pc_roles_infos.sql"));
     await db.query(read("supabase/migrations/20261115000001_pc_roles_domaines.sql"));
+    await db.query(read("supabase/migrations/20261116000001_pc_role_tasks.sql"));
   });
   afterAll(async () => {
     await db?.end();
@@ -57,7 +59,7 @@ describe.skipIf(!url)("schéma pc_* et sécurité", () => {
     }
   };
 
-  it("la RLS est active sur les 15 tables pc_*", async () => {
+  it("la RLS est active sur les 16 tables pc_*", async () => {
     const r = await db.query(
       "select count(*)::int as n from pg_tables where schemaname='public' and tablename like 'pc\\_%' and rowsecurity",
     );
@@ -248,5 +250,34 @@ describe.skipIf(!url)("schéma pc_* et sécurité", () => {
       "select count(*)::int as n from public.pc_roles c join public.pc_roles p on p.id = c.parent_id where p.parent_id is not null",
     );
     expect(deep.rows[0].n).toBe(0);
+  });
+
+  it("tâches par rôle : chaque rôle en a, sans heure précise, rejeu sans doublon, suppression en cascade", async () => {
+    const n = async () =>
+      (await db.query("select count(*)::int as n from public.pc_role_tasks")).rows[0].n;
+    const total = await n();
+    expect(total).toBe(95);
+    const sans = await db.query(
+      "select r.nom from public.pc_roles r where not exists (select 1 from public.pc_role_tasks t where t.role_id = r.id) and r.nom not in ('Photographe','Photos et vidéos') limit 5",
+    );
+    // seuls quelques rôles très ciblés peuvent ne rien avoir ; ici tous les rôles de départ et domaines en ont
+    expect(sans.rows).toEqual([]);
+    const heures = await db.query(
+      "select titre from public.pc_role_tasks where titre ~* '\\m[0-9]{1,2}\\s?(h|:)[0-9]{0,2}\\M' and titre !~* '9:16'",
+    );
+    expect(heures.rows).toEqual([]);
+    await db.query(read("supabase/migrations/20261116000001_pc_role_tasks.sql")); // rejeu
+    expect(await n()).toBe(total);
+    const r = (
+      await db.query("insert into public.pc_roles (nom) values ('Rôle jetable') returning id")
+    ).rows[0].id;
+    await db.query("insert into public.pc_role_tasks (role_id, titre) values ($1, 'Faire ceci')", [
+      r,
+    ]);
+    await expect(
+      db.query("insert into public.pc_role_tasks (role_id, titre) values ($1, 'Faire ceci')", [r]),
+    ).rejects.toThrow();
+    await db.query("delete from public.pc_roles where id = $1", [r]);
+    expect(await n()).toBe(total);
   });
 });

@@ -6,13 +6,14 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { roleTree } from "@/lib/roles";
 import type { RoleRow } from "@/lib/database.types";
 import { requireSession } from "@/server/session";
-import { getActiveTeam, getRoles } from "@/server/team";
+import { getActiveTeam, getRoles, getRoleTasks } from "@/server/team";
+import { RoleTaskList } from "@/components/team/RoleTaskList";
 
 export const metadata: Metadata = { title: "Rôles du pôle" };
 
 export default async function RolesPage() {
   const auth = await requireSession();
-  const [roles, team] = await Promise.all([getRoles(), getActiveTeam()]);
+  const [roles, team, roleTasks] = await Promise.all([getRoles(), getActiveTeam(), getRoleTasks()]);
   const holdersOf = (id: string) => team.filter((m) => m.roleIds.includes(id));
   const vacant = roles.filter((r) => holdersOf(r.id).length === 0);
 
@@ -33,6 +34,10 @@ export default async function RolesPage() {
                 <span className="text-ink-muted">{role.ne_fait_pas}</span>
               </p>
             )}
+            <RoleTaskList
+              title="Tâches habituelles"
+              tasks={roleTasks.filter((t) => t.role_id === role.id)}
+            />
           </div>
           {holders.length === 0 ? (
             <p className="bg-accent-soft text-accent-strong mt-auto inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold">

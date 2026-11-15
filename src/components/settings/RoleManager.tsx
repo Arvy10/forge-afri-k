@@ -6,7 +6,8 @@ import { Plus, Save, Trash2 } from "lucide-react";
 import { createRole, deleteRole, saveRole } from "@/actions/members";
 import { Button } from "@/components/ui/Button";
 import { FormError } from "@/components/ui/Field";
-import type { RoleRow } from "@/lib/database.types";
+import type { RoleRow, RoleTaskRow } from "@/lib/database.types";
+import { RoleTaskEditor } from "./RoleTaskEditor";
 import { roleTree } from "@/lib/roles";
 import { cn } from "@/lib/cn";
 
@@ -198,10 +199,12 @@ function RoleForm({
 export function RoleManager({
   roles,
   holders,
+  roleTasks = [],
   startAdding = false,
 }: {
   roles: RoleRow[];
   holders: Record<string, number>;
+  roleTasks?: RoleTaskRow[];
   /** Ouvre directement le formulaire « Nouveau rôle ». */
   startAdding?: boolean;
 }) {
@@ -212,10 +215,14 @@ export function RoleManager({
       {tree.map(({ role, children }) => (
         <div key={role.id} className="space-y-3">
           <RoleForm role={role} roles={roles} holders={holders[role.id]} />
+          <RoleTaskEditor role={role} tasks={roleTasks.filter((t) => t.role_id === role.id)} />
           {children.length > 0 && (
             <div className="border-line ml-4 space-y-3 border-l-2 pl-4">
               {children.map((c) => (
-                <RoleForm key={c.id} role={c} roles={roles} holders={holders[c.id]} nested />
+                <div key={c.id} className="space-y-2">
+                  <RoleForm role={c} roles={roles} holders={holders[c.id]} nested />
+                  <RoleTaskEditor role={c} tasks={roleTasks.filter((t) => t.role_id === c.id)} />
+                </div>
               ))}
             </div>
           )}

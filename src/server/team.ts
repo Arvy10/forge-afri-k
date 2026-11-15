@@ -3,8 +3,14 @@ import { cache } from "react";
 import type { MemberLite } from "@/lib/members";
 import { fullName } from "@/lib/members";
 import { roleLabel } from "@/lib/roles";
-import type { MemberRoleRow, MemberRow, RoleRow } from "@/lib/database.types";
+import type { MemberRoleRow, MemberRow, RoleRow, RoleTaskRow } from "@/lib/database.types";
 import { db } from "./db";
+
+/** Tâches habituelles de chaque rôle. */
+export const getRoleTasks = cache(async (): Promise<RoleTaskRow[]> => {
+  const { data } = await db().from("pc_role_tasks").select("*").order("ordre");
+  return (data ?? []) as RoleTaskRow[];
+});
 
 export const getRoles = cache(async (): Promise<RoleRow[]> => {
   const { data } = await db().from("pc_roles").select("*").order("ordre");
