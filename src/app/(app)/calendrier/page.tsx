@@ -107,7 +107,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
         href={calendarHref(query, { post: "new", d: null })}
         scroll={false}
         aria-label="Ajouter un post"
-        className="bg-accent-strong text-on-accent fixed right-4 bottom-24 z-20 inline-flex size-14 items-center justify-center rounded-full shadow-lg active:scale-95 md:hidden"
+        className="bg-accent-strong text-on-accent fixed right-4 bottom-24 z-20 inline-flex size-14 items-center justify-center rounded-full shadow-lg active:scale-95 lg:hidden"
       >
         <Plus aria-hidden className="size-6" />
       </Link>

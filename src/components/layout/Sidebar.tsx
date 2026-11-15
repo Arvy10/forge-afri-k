@@ -6,7 +6,7 @@ import { UserCard, type ShellUser } from "./UserCard";
 /** Barre latérale fixe (ordinateur). */
 export function Sidebar({ user }: { user: ShellUser }) {
   return (
-    <aside className="bg-forest text-on-forest fixed inset-y-0 left-0 z-30 hidden w-72 flex-col overflow-hidden md:flex">
+    <aside className="bg-forest text-on-forest fixed inset-y-0 left-0 z-30 hidden w-72 flex-col overflow-hidden lg:flex">
       <Gear className="text-on-forest pointer-events-none absolute -right-20 -bottom-20 size-72 opacity-[0.05]" />
       <div className="relative px-4 pt-5 pb-4">
         <div className="mx-auto w-44">

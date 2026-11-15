@@ -323,6 +323,11 @@
     min-height: 100dvh;
     -webkit-font-smoothing: antialiased;
   }
+  /* Une grille sans colonnes définies (mobile) ne doit jamais s'élargir selon son contenu : sinon un long
+     texte la fait sortir de l'écran. Les classes grid-cols-* gardent la priorité. */
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
   h1,
   h2,
   h3,

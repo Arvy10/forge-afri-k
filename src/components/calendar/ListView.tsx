@@ -139,7 +139,7 @@ export function ListView({ posts, people, me, today, query }: Props) {
             </h2>
 
             {/* Mobile : une carte par post */}
-            <div className="stagger grid gap-3 sm:grid-cols-2 md:hidden">
+            <div className="stagger grid gap-3 sm:grid-cols-2 xl:hidden">
               {weekPosts.map((p) => (
                 <PostCard
                   key={p.id}
@@ -154,7 +154,7 @@ export function ListView({ posts, people, me, today, query }: Props) {
             </div>
 
             {/* Ordinateur : vrai tableau */}
-            <div className="border-line bg-surface shadow-card hidden overflow-hidden rounded-2xl border md:block">
+            <div className="border-line bg-surface shadow-card hidden overflow-hidden rounded-2xl border xl:block">
               <table className="w-full border-separate border-spacing-0 text-sm">
                 <thead>
                   <tr>

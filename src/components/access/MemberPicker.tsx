@@ -17,9 +17,9 @@ export function MemberPicker({ members }: { members: MemberLite[] }) {
   return (
     <div>
       <FormError message={error} />
-      <ul className="stagger grid gap-3 sm:grid-cols-2">
+      <ul className="stagger grid grid-cols-1 gap-3 sm:grid-cols-2">
         {members.map((m) => (
-          <li key={m.id}>
+          <li key={m.id} className="min-w-0">
             <button
               type="button"
               disabled={choosing !== null}

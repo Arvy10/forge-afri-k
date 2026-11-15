@@ -56,7 +56,7 @@ export function TaskGroups({
     <button
       type="button"
       onClick={() => setForm({ mode: "new", defaultMemberId: defaultMemberId ?? me.id })}
-      className="bg-accent-strong text-on-accent fixed right-4 bottom-24 z-20 inline-flex min-h-14 items-center gap-2 rounded-full px-5 text-base font-semibold shadow-lg active:scale-95 md:right-8 md:bottom-8"
+      className="bg-accent-strong text-on-accent fixed right-4 bottom-24 z-20 inline-flex min-h-14 items-center gap-2 rounded-full px-5 text-base font-semibold shadow-lg active:scale-95 lg:right-8 lg:bottom-8"
     >
       <Plus aria-hidden className="size-5" />
       Ajouter une tâche

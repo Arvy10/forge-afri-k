@@ -22,7 +22,7 @@ export function MobileNav({ user }: { user: ShellUser }) {
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <nav
         aria-label="Navigation principale"
-        className="border-line bg-surface fixed inset-x-0 bottom-0 z-30 flex border-t pb-[env(safe-area-inset-bottom)] md:hidden"
+        className="border-line bg-surface fixed inset-x-0 bottom-0 z-30 flex border-t pb-[env(safe-area-inset-bottom)] lg:hidden"
       >
         {primary.map(({ href, label, short, icon: Icon }) => {
           const active = isActivePath(pathname, href);
@@ -56,10 +56,10 @@ export function MobileNav({ user }: { user: ShellUser }) {
       </nav>
 
       <Dialog.Portal>
-        <Dialog.Overlay className="rx-overlay fixed inset-0 z-40 bg-black/50 md:hidden" />
+        <Dialog.Overlay className="rx-overlay fixed inset-0 z-40 bg-black/50 lg:hidden" />
         <Dialog.Content
           aria-describedby={undefined}
-          className="rx-drawer bg-forest text-on-forest fixed inset-y-0 left-0 z-50 flex w-[19rem] max-w-[88vw] flex-col px-3 pt-5 pb-[max(1rem,env(safe-area-inset-bottom))] md:hidden"
+          className="rx-drawer bg-forest text-on-forest fixed inset-y-0 left-0 z-50 flex w-[19rem] max-w-[88vw] flex-col px-3 pt-5 pb-[max(1rem,env(safe-area-inset-bottom))] lg:hidden"
         >
           <div className="mb-4 flex items-start justify-between px-2">
             <div>

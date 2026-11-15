@@ -22,7 +22,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   };
 
   return (
-    <div className="min-h-dvh md:pl-72">
+    <div className="min-h-dvh lg:pl-72">
       <a
         href="#contenu"
         className="bg-accent-strong text-on-accent sr-only z-50 rounded-lg px-4 py-2 focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
@@ -33,7 +33,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <MobileTopBar user={shellUser} />
       <main
         id="contenu"
-        className="stagger mx-auto w-full max-w-[88rem] px-4 pt-5 pb-28 md:px-8 md:pt-8 md:pb-12"
+        className="stagger mx-auto w-full max-w-[88rem] px-4 pt-5 pb-28 md:px-8 md:pt-8 lg:pb-12"
       >
         {children}
       </main>

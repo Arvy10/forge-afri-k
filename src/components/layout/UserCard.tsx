@@ -15,7 +15,7 @@ export type ShellUser = {
 };
 
 const ghost =
-  "text-on-forest/85 hover:bg-on-forest/10 hover:text-on-forest flex min-h-12 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium md:min-h-10";
+  "text-on-forest/85 hover:bg-on-forest/10 hover:text-on-forest flex min-h-12 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium lg:min-h-10";
 
 /** Bas de la barre : qui je suis, « ce n'est pas moi », mode administrateur, thème, sortie. */
 export function UserCard({ user }: { user: ShellUser }) {

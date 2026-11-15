@@ -90,8 +90,8 @@ export function TasksOverview({ tasks, members, posts, me, today, query, canAdd 
         </div>
       ) : (
         <>
-          <div className="stagger space-y-3 md:hidden">{m.tasks.map(card)}</div>
-          <div className="hidden md:block">
+          <div className="stagger space-y-3 xl:hidden">{m.tasks.map(card)}</div>
+          <div className="hidden xl:block">
             <TasksTable
               tasks={m.tasks}
               members={members}
@@ -109,7 +109,7 @@ export function TasksOverview({ tasks, members, posts, me, today, query, canAdd 
         <button
           type="button"
           onClick={() => setForm({ mode: "new" })}
-          className="bg-accent-strong text-on-accent fixed right-4 bottom-24 z-20 inline-flex min-h-14 items-center gap-2 rounded-full px-5 text-base font-semibold shadow-lg active:scale-95 md:right-8 md:bottom-8"
+          className="bg-accent-strong text-on-accent fixed right-4 bottom-24 z-20 inline-flex min-h-14 items-center gap-2 rounded-full px-5 text-base font-semibold shadow-lg active:scale-95 lg:right-8 lg:bottom-8"
         >
           <Plus aria-hidden className="size-5" />
           Ajouter une tâche

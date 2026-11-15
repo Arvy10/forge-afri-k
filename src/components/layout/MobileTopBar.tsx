@@ -6,7 +6,7 @@ import type { ShellUser } from "./UserCard";
 /** Barre du haut sur mobile : le logo et, toujours visible, le nom de la personne connectée. */
 export function MobileTopBar({ user }: { user: ShellUser }) {
   return (
-    <div className="border-line bg-canvas/90 sticky top-0 z-20 flex items-center justify-between gap-3 border-b px-4 py-2 backdrop-blur-md md:hidden">
+    <div className="border-line bg-canvas/90 sticky top-0 z-20 flex items-center justify-between gap-3 border-b px-4 py-2 backdrop-blur-md lg:hidden">
       <Link
         href="/"
         aria-label="Forge Afri'K — accueil"
