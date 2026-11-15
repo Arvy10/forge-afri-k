@@ -3,12 +3,10 @@
  */
 import type {
   ActivityKind,
-  Channel,
   ContentType,
   DeliverableType,
   MemberColor,
   MilestoneStatus,
-  PostFormat,
   PostStatus,
   ProjectStatus,
   TaskPriority,
@@ -55,22 +53,41 @@ export type RoleTaskRow = {
 };
 export type MemberRoleRow = { member_id: string; role_id: string; created_at: string };
 
-export type PostRow = {
+export type SlotMoment = "matin" | "soir";
+export type SlotPriority = "obligatoire" | "facultatif";
+
+export type DayRow = {
   id: string;
   numero: number;
   date: string;
-  type: ContentType;
-  canal_principal: Channel;
-  autres_canaux: Channel[];
-  format: PostFormat;
-  idee: string;
-  prep_date: string | null;
+  jour: string;
+  semaine: number;
+  theme_semaine: string;
+  type_de_contenu: ContentType;
+  consigne_du_jour: string;
+  created_at: string;
+  updated_at: string;
+};
+
+/** Un créneau de publication : le post obligatoire ou le petit post facultatif d'un jour. */
+export type SlotRow = {
+  id: string;
+  day_id: string;
+  moment: SlotMoment;
   heure: string;
-  legende: string;
+  priorite: SlotPriority;
+  genre: string;
+  titre: string;
+  idee: string;
+  comment_faire: string[];
+  accroche: string | null;
+  legende: string | null;
+  /** Un format par réseau : { tiktok, instagram, facebook }. */
+  formats: Record<string, string>;
+  a_preparer_le: string | null;
   responsable_id: string | null;
   statut: PostStatus;
   lien: string | null;
-  notes: string;
   cree_par: string | null;
   maj_par: string | null;
   created_at: string;
@@ -85,7 +102,7 @@ export type TaskRow = {
   echeance: string | null;
   priorite: TaskPriority;
   statut: TaskStatus;
-  post_id: string | null;
+  slot_id: string | null;
   fait_le: string | null;
   cree_par: string | null;
   maj_par: string | null;
@@ -119,7 +136,7 @@ export type ActivityRow = {
   member_id: string | null;
   cible_id: string | null;
   task_id: string | null;
-  post_id: string | null;
+  slot_id: string | null;
   libelle: string;
   created_at: string;
 };
@@ -190,7 +207,8 @@ export type Database = {
       pc_members: Table<MemberRow, "prenom">;
       pc_roles: Table<RoleRow, "nom">;
       pc_member_roles: Table<MemberRoleRow, "member_id" | "role_id">;
-      pc_posts: Table<PostRow, "date" | "type" | "canal_principal">;
+      pc_days: Table<DayRow, "numero" | "date" | "jour" | "semaine" | "type_de_contenu">;
+      pc_slots: Table<SlotRow, "day_id" | "moment" | "heure" | "priorite" | "titre">;
       pc_tasks: Table<TaskRow, "titre">;
       pc_task_deliverables: Table<DeliverableRow, "task_id" | "type" | "nom">;
       pc_nudges: Table<NudgeRow, "task_id">;

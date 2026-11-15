@@ -85,8 +85,8 @@ function Form({
           : "",
       echeance: task?.echeance ?? "",
       priorite: task?.priorite ?? "normale",
-      post_id: task
-        ? (task.post_id ?? "")
+      slot_id: task
+        ? (task.slot_id ?? "")
         : state.mode === "new"
           ? (state.defaultPostId ?? "")
           : "",
@@ -172,8 +172,8 @@ function Form({
         />
         <SelectField
           label="Post lié (facultatif)"
-          error={errors.post_id?.message}
-          {...register("post_id")}
+          error={errors.slot_id?.message}
+          {...register("slot_id")}
         >
           <option value="">Aucun</option>
           {posts.map((p) => (

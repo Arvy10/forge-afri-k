@@ -1,24 +1,19 @@
 import "server-only";
-import { addDaysISO, formatDateShort, todayISO } from "@/lib/dates";
-import type { PostRow } from "@/lib/database.types";
-import { db } from "./db";
+import { slotOptionLabel } from "@/lib/calendar";
+import { addDaysISO, todayISO } from "@/lib/dates";
+import { getDays } from "./calendar";
 import { getTeam } from "./team";
 import { fetchTasks, loadTaskViews, type TaskView } from "./tasks";
 
 export type PostOption = { id: string; label: string };
 
-/** Posts proposés quand on lie une tâche à un post (les récents et les à venir). */
+/** Créneaux proposés quand on lie une tâche à un post du calendrier (récents et à venir). */
 export async function fetchPostOptions(): Promise<PostOption[]> {
-  const { data } = await db()
-    .from("pc_posts")
-    .select("id, numero, date, idee")
-    .gte("date", addDaysISO(todayISO(), -14))
-    .order("date")
-    .limit(120);
-  return ((data ?? []) as Pick<PostRow, "id" | "numero" | "date" | "idee">[]).map((p) => ({
-    id: p.id,
-    label: `N° ${p.numero} · ${formatDateShort(p.date)}${p.idee ? ` · ${p.idee.slice(0, 40)}` : ""}`,
-  }));
+  const days = await getDays();
+  const since = addDaysISO(todayISO(), -14);
+  return days
+    .filter((d) => d.date >= since)
+    .flatMap((d) => d.slots.map((s) => ({ id: s.id, label: slotOptionLabel(d, s) })));
 }
 
 /** Tâches (avec livrables et relances) + équipe + posts, prêtes pour l'affichage. */

@@ -4,68 +4,62 @@ import { Avatar } from "@/components/ui/Avatar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { TypePill } from "@/components/ui/TypePill";
+import type { DayWithSlots } from "@/lib/calendar";
 import { cn } from "@/lib/cn";
+import type { SlotRow } from "@/lib/database.types";
 import { formatDayLong, formatTime } from "@/lib/dates";
 import type { MemberLite } from "@/lib/members";
-import type { PostRow } from "@/lib/database.types";
 import { Countdown } from "./Countdown";
 
+/** Le prochain post OBLIGATOIRE : quand, quoi, et où en est la préparation. */
 export function NextPostCard({
-  post,
+  next,
   responsable,
 }: {
-  post: PostRow | null;
+  next: { day: DayWithSlots; slot: SlotRow } | null;
   responsable: MemberLite | null;
 }) {
-  if (!post)
+  if (!next)
     return (
       <EmptyState
         compact
         illustration="calendar"
-        title="Aucun post à venir"
-        description="Ajoute le prochain post pour lancer le compte à rebours."
-        action={
-          <Link
-            href="/calendrier?post=new"
-            className="border-line-strong bg-surface hover:bg-surface-2 inline-flex min-h-11 items-center rounded-lg border px-3 text-sm font-semibold"
-          >
-            Ajouter un post
-          </Link>
-        }
+        title="Aucun post obligatoire à venir"
+        description="Tous les posts du calendrier sont publiés ou passés."
       />
     );
-
+  const { day, slot } = next;
   const steps = [
-    { label: "Légende rédigée", done: post.legende.trim() !== "" },
+    { label: "Légende prête", done: (slot.legende ?? "").trim() !== "" },
     {
       label: "Visuel ou vidéo prêt",
-      done: ["pret_a_valider", "valide", "publie"].includes(post.statut),
+      done: ["pret_a_valider", "valide", "publie"].includes(slot.statut),
     },
-    { label: "Validé par le pôle", done: ["valide", "publie"].includes(post.statut) },
+    { label: "Validé par le pôle", done: ["valide", "publie"].includes(slot.statut) },
   ];
   const remaining = steps.filter((s) => !s.done).length;
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <TypePill type={post.type} />
-        <StatusPill status={post.statut} />
+        <TypePill type={day.type_de_contenu} />
+        <StatusPill status={slot.statut} />
       </div>
       <div>
-        <p className="text-ink-muted flex items-center gap-1.5 text-xs font-medium">
-          <Clock aria-hidden className="size-3.5" />
-          Publication {formatDayLong(post.date)} à {formatTime(post.heure)}
+        <p className="text-ink-muted flex items-center gap-1.5 text-sm font-medium">
+          <Clock aria-hidden className="size-4" />
+          Publication {formatDayLong(day.date)} à {formatTime(slot.heure)}
         </p>
-        <Countdown date={post.date} time={post.heure} />
+        <Countdown date={day.date} time={slot.heure} />
       </div>
       <Link
-        href={`/calendrier?post=${post.id}&date=${post.date}`}
-        className="line-clamp-2 block min-h-11 text-sm font-medium underline-offset-4 hover:underline"
+        href={`/calendrier/${day.date}`}
+        className="line-clamp-3 block min-h-12 text-base font-semibold underline-offset-4 hover:underline"
       >
-        {post.idee || <span className="text-ink-muted italic">Idée à définir</span>}
+        {slot.titre}
       </Link>
       <div>
-        <p className="mb-1.5 text-xs font-semibold">
+        <p className="mb-1.5 text-sm font-semibold">
           {remaining === 0 ? "Tout est prêt" : `Reste à faire : ${remaining}`}
         </p>
         <ul className="space-y-1">
@@ -73,7 +67,7 @@ export function NextPostCard({
             <li
               key={s.label}
               className={cn(
-                "flex items-center gap-2 text-sm",
+                "flex items-center gap-2 text-base",
                 s.done ? "text-ink-muted" : "font-medium",
               )}
             >
@@ -88,7 +82,7 @@ export function NextPostCard({
           ))}
         </ul>
       </div>
-      <p className="flex items-center gap-2 text-sm">
+      <p className="flex items-center gap-2 text-base">
         {responsable ? (
           <>
             <Avatar name={responsable.name} color={responsable.couleur} size="sm" />

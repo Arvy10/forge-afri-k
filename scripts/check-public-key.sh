@@ -5,7 +5,7 @@
 set -u
 URL="${1:?URL du projet manquante}"
 KEY="${2:?clé publique manquante}"
-TABLES="pc_members pc_roles pc_member_roles pc_posts pc_tasks pc_task_deliverables pc_nudges pc_activity pc_guide_sections pc_projects pc_milestones pc_settings pc_login_attempts pc_feature_interests"
+TABLES="pc_members pc_roles pc_member_roles pc_days pc_slots pc_tasks pc_task_deliverables pc_nudges pc_activity pc_guide_sections pc_projects pc_milestones pc_settings pc_login_attempts pc_feature_interests pc_infos pc_role_tasks"
 bad=0
 for t in $TABLES; do
   body=$(curl -s -m 20 -w '\n%{http_code}' "$URL/rest/v1/$t?select=*&limit=1" -H "apikey: $KEY" -H "Authorization: Bearer $KEY")

@@ -3,23 +3,26 @@ import { CalendarClock, TriangleAlert } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TypePill } from "@/components/ui/TypePill";
+import { PriorityBadge } from "@/components/calendar/DayCard";
+import type { DayWithSlots } from "@/lib/calendar";
+import { isSlotLate } from "@/lib/calendar";
 import { cn } from "@/lib/cn";
-import { formatDateShort, formatDayShort, isPrepLate } from "@/lib/dates";
+import type { SlotRow } from "@/lib/database.types";
+import { formatDateShort, formatDayShort } from "@/lib/dates";
 import type { MemberLite } from "@/lib/members";
-import type { PostRow } from "@/lib/database.types";
 
 /** L'alerte principale du pôle : ce qu'il faut préparer ou filmer aujourd'hui ou demain. */
 export function PrepSoonList({
-  posts,
+  items,
   people,
   today,
 }: {
-  posts: PostRow[];
+  items: { day: DayWithSlots; slot: SlotRow }[];
   people: MemberLite[];
   today: string;
 }) {
   const byId = new Map(people.map((p) => [p.id, p]));
-  if (posts.length === 0)
+  if (items.length === 0)
     return (
       <EmptyState
         compact
@@ -30,15 +33,14 @@ export function PrepSoonList({
     );
   return (
     <ul className="divide-line divide-y">
-      {posts.map((p) => {
-        const late = isPrepLate(p, today);
-        const who = p.responsable_id ? byId.get(p.responsable_id) : null;
+      {items.slice(0, 8).map(({ day, slot }) => {
+        // Le retard ne se signale que pour les posts obligatoires ; un facultatif est simplement « à préparer ».
+        const late = isSlotLate(slot, today);
+        const behind = slot.a_preparer_le !== null && slot.a_preparer_le < today;
+        const who = slot.responsable_id ? byId.get(slot.responsable_id) : null;
         return (
-          <li key={p.id}>
-            <Link
-              href={`/calendrier?post=${p.id}&date=${p.date}`}
-              className="flex min-h-11 items-start gap-3 py-3"
-            >
+          <li key={slot.id}>
+            <Link href={`/calendrier/${day.date}`} className="flex min-h-12 items-start gap-3 py-3">
               <span
                 className={cn(
                   "mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg",
@@ -52,15 +54,14 @@ export function PrepSoonList({
                 )}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="line-clamp-2 block text-sm font-medium">
-                  {p.idee || "Idée à définir"}
-                </span>
-                <span className="text-ink-muted mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-                  <TypePill type={p.type} compact />
+                <span className="line-clamp-2 block text-base font-medium">{slot.titre}</span>
+                <span className="text-ink-muted mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                  <PriorityBadge priorite={slot.priorite} />
+                  <TypePill type={day.type_de_contenu} compact />
                   <span className={late ? "text-accent-strong font-semibold" : undefined}>
-                    {late
-                      ? `En retard · à préparer le ${formatDayShort(p.prep_date!)} ${formatDateShort(p.prep_date!)}`
-                      : `${p.prep_date === today ? "À préparer aujourd'hui" : "À préparer demain"} · publication le ${formatDayShort(p.date)} ${formatDateShort(p.date)}`}
+                    {behind
+                      ? `${late ? "En retard · " : ""}à préparer le ${formatDayShort(slot.a_preparer_le!)} ${formatDateShort(slot.a_preparer_le!)}`
+                      : `${slot.a_preparer_le === today ? "À préparer aujourd'hui" : "À préparer demain"} · publication le ${formatDayShort(day.date)} ${formatDateShort(day.date)}`}
                   </span>
                 </span>
               </span>

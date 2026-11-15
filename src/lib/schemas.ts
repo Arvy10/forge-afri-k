@@ -1,9 +1,6 @@
 import { z } from "zod";
 import {
-  CHANNELS,
-  CONTENT_TYPES,
   MEMBER_COLORS,
-  POST_FORMATS,
   POST_STATUSES,
   PROJECT_STATUSES,
   TASK_PRIORITIES,
@@ -23,18 +20,11 @@ const optionalDate = z
   .transform(blankToNull)
   .refine((v) => v === null || isISODate(v), "Date invalide.");
 
-const requiredDate = z
-  .string({ error: "Choisis une date." })
-  .min(1, "Choisis une date.")
-  .refine(isISODate, "Date invalide.");
-
 const optionalUuid = z
   .string()
   .nullish()
   .transform(blankToNull)
   .refine((v) => v === null || z.uuid().safeParse(v).success, "Choix invalide.");
-
-const time = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Heure invalide (format 08:00).");
 
 /* ------------------------------ Accès ------------------------------ */
 
@@ -103,35 +93,26 @@ export const infoSchema = z.object({
 export type InfoInput = z.input<typeof infoSchema>;
 export const infoUpdateSchema = infoSchema.extend({ id: z.uuid() });
 
-/* ------------------------------ Posts ------------------------------ */
+/* ------------------------------ Créneaux du calendrier ------------------------------ */
 
-export const postSchema = z.object({
-  date: requiredDate,
-  type: z.enum(CONTENT_TYPES, { error: "Choisis un type de contenu." }),
-  canal_principal: z.enum(CHANNELS, { error: "Choisis un canal." }),
-  autres_canaux: z.array(z.enum(CHANNELS)).default([]),
-  format: z.enum(POST_FORMATS, { error: "Choisis un format." }),
-  idee: z.string().trim().max(600, "600 caractères maximum.").default(""),
-  prep_date: optionalDate,
-  heure: time.default("08:00"),
-  legende: z.string().max(5000, "5000 caractères maximum.").default(""),
-  responsable_id: optionalUuid,
-  statut: z.enum(POST_STATUSES).default("a_faire"),
-  lien: z
-    .string()
-    .nullish()
-    .transform(blankToNull)
-    .refine(
-      (v) => v === null || /^https?:\/\/\S+$/i.test(v),
-      "Le lien doit commencer par http:// ou https://.",
-    ),
-  notes: z.string().max(5000, "5000 caractères maximum.").default(""),
-});
-export type PostInput = z.input<typeof postSchema>;
-export type PostValues = z.output<typeof postSchema>;
-
-export const postStatusSchema = z.object({ id: z.uuid(), statut: z.enum(POST_STATUSES) });
-export const postMoveSchema = z.object({ id: z.uuid(), date: requiredDate });
+/** Ce que l'équipe peut remplir sur un créneau : responsable, statut, lien du post, date de préparation. */
+export const slotUpdateSchema = z
+  .object({
+    responsable_id: z.uuid().nullable().optional(),
+    statut: z.enum(POST_STATUSES).optional(),
+    lien: z
+      .string()
+      .nullish()
+      .transform(blankToNull)
+      .refine(
+        (v) => v === null || /^https?:\/\/\S+$/i.test(v),
+        "Le lien doit commencer par http:// ou https://.",
+      )
+      .optional(),
+    a_preparer_le: optionalDate.optional(),
+  })
+  .strict();
+export type SlotUpdateInput = z.input<typeof slotUpdateSchema>;
 
 /* ------------------------------ Tâches ------------------------------ */
 
@@ -141,7 +122,7 @@ export const taskSchema = z.object({
   member_id: optionalUuid,
   echeance: optionalDate,
   priorite: z.enum(TASK_PRIORITIES).default("normale"),
-  post_id: optionalUuid,
+  slot_id: optionalUuid,
   statut: z.enum(TASK_STATUSES).default("a_faire"),
 });
 export type TaskInput = z.input<typeof taskSchema>;

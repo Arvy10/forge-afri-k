@@ -16,7 +16,8 @@ const TABLES = [
   "pc_members",
   "pc_roles",
   "pc_member_roles",
-  "pc_posts",
+  "pc_days",
+  "pc_slots",
   "pc_tasks",
   "pc_task_deliverables",
   "pc_nudges",
@@ -45,6 +46,8 @@ describe.skipIf(!url)("schéma pc_* et sécurité", () => {
     await db.query(read("supabase/migrations/20261112000001_pc_roles_infos.sql"));
     await db.query(read("supabase/migrations/20261115000001_pc_roles_domaines.sql"));
     await db.query(read("supabase/migrations/20261116000001_pc_role_tasks.sql"));
+    await db.query(read("supabase/migrations/20261116000002_pc_calendrier_jours.sql"));
+    await db.query(read("supabase/migrations/20261116000003_pc_calendrier_seed.sql"));
   });
   afterAll(async () => {
     await db?.end();
@@ -59,7 +62,7 @@ describe.skipIf(!url)("schéma pc_* et sécurité", () => {
     }
   };
 
-  it("la RLS est active sur les 16 tables pc_*", async () => {
+  it("la RLS est active sur les 17 tables pc_*", async () => {
     const r = await db.query(
       "select count(*)::int as n from pg_tables where schemaname='public' and tablename like 'pc\\_%' and rowsecurity",
     );
@@ -91,16 +94,17 @@ describe.skipIf(!url)("schéma pc_* et sécurité", () => {
     await expect(asRole(role, "delete from public.pc_tasks")).rejects.toThrow(/permission denied/);
   });
 
-  it("le départ est vide : 0 membre, 0 tâche, 0 post, mais les textes réels sont là", async () => {
+  it("le départ est vide : 0 membre, 0 tâche, mais les textes réels (rôles, guide, calendrier) sont là", async () => {
     const n = async (t: string) =>
       (await db.query(`select count(*)::int as n from public.${t}`)).rows[0].n;
-    expect([await n("pc_members"), await n("pc_tasks"), await n("pc_posts")]).toEqual([0, 0, 0]);
+    expect([await n("pc_members"), await n("pc_tasks")]).toEqual([0, 0]);
+    expect([await n("pc_days"), await n("pc_slots")]).toEqual([20, 40]);
     expect([
       await n("pc_roles"),
       await n("pc_guide_sections"),
       await n("pc_projects"),
       await n("pc_milestones"),
-    ]).toEqual([38, 8, 6, 5]); // 6 rôles de départ + 8 domaines + 24 sous-rôles
+    ]).toEqual([38, 9, 6, 5]); // 6 rôles de départ + 8 domaines + 24 sous-rôles
   });
 
   it("le bucket des livrables est privé", async () => {
@@ -134,11 +138,11 @@ describe.skipIf(!url)("schéma pc_* et sécurité", () => {
       [t, A],
     );
     await db.query("insert into pc_nudges (task_id, par_member_id) values ($1,$2)", [t, B]);
+    // Un créneau passe à « publié » : le journal le note (le chargement du calendrier, lui, ne note rien).
     await db.query(
-      "insert into pc_posts (date,type,canal_principal,idee,cree_par) values ('2026-11-16','impact','instagram','Mon post',$1)",
+      "update pc_slots set statut='publie', maj_par=$1 where id = (select s.id from pc_slots s join pc_days d on d.id=s.day_id where d.date='2026-11-16' and s.priorite='obligatoire')",
       [A],
     );
-    await db.query("update pc_posts set statut='publie', maj_par=$1", [A]);
     const kinds = (await db.query("select kind from pc_activity order by id")).rows.map(
       (r) => r.kind,
     );
@@ -149,7 +153,6 @@ describe.skipIf(!url)("schéma pc_* et sécurité", () => {
         "task_reopened",
         "deliverable_added",
         "nudge",
-        "post_created",
         "post_published",
       ]),
     );
@@ -183,15 +186,55 @@ describe.skipIf(!url)("schéma pc_* et sécurité", () => {
     await db.query("insert into pc_members (prenom, nom) values ('Aa', 'Autre')"); // distingué par le nom de famille
   });
 
-  it("le numéro de post est automatique et croissant", async () => {
+  it("calendrier : 20 jours, un seul obligatoire et un seul facultatif par jour, un créneau par moment", async () => {
+    const r = await db.query(`
+      select d.date, count(*) filter (where s.priorite='obligatoire')::int as ob, count(*) filter (where s.priorite='facultatif')::int as fa, count(distinct s.moment)::int as moments
+      from pc_days d join pc_slots s on s.day_id = d.id group by d.date`);
+    expect(r.rows).toHaveLength(20);
+    for (const row of r.rows) expect([row.ob, row.fa, row.moments]).toEqual([1, 1, 2]);
+    await expect(
+      db.query(
+        "insert into pc_slots (day_id, moment, heure, priorite, titre) select id, 'matin', '09:00', 'facultatif', 'doublon' from pc_days where date='2026-11-16'",
+      ),
+    ).rejects.toThrow(/unique|duplicate/i);
+  });
+
+  it("calendrier : rejouer le chargement ne crée aucun doublon et n'écrase pas ce que l'équipe a rempli", async () => {
+    const who = (await db.query("select id from pc_members limit 1")).rows[0].id;
     await db.query(
-      "insert into pc_posts (date,type,canal_principal) values ('2026-11-17','fun','tiktok'), ('2026-11-18','fun','tiktok')",
+      "update pc_slots set responsable_id=$1, lien='https://exemple.org/p', statut='en_cours' where id = (select s.id from pc_slots s join pc_days d on d.id=s.day_id where d.date='2026-11-17' and s.priorite='obligatoire')",
+      [who],
     );
-    const nums = (await db.query("select numero from pc_posts order by numero")).rows.map(
-      (r) => r.numero as number,
+    await db.query(read("supabase/migrations/20261116000003_pc_calendrier_seed.sql"));
+    const counts = (
+      await db.query(
+        "select (select count(*)::int from pc_days) as d, (select count(*)::int from pc_slots) as s",
+      )
+    ).rows[0];
+    expect(counts).toEqual({ d: 20, s: 40 });
+    const kept = (
+      await db.query(
+        "select responsable_id, lien, statut from pc_slots s join pc_days d on d.id=s.day_id where d.date='2026-11-17' and s.priorite='obligatoire'",
+      )
+    ).rows[0];
+    expect(kept).toEqual({
+      responsable_id: who,
+      lien: "https://exemple.org/p",
+      statut: "en_cours",
+    });
+  });
+
+  it("calendrier : le lien doit être http(s) ; la règle du calendrier est dans le guide", async () => {
+    await expect(
+      db.query(
+        "update pc_slots set lien='pas-un-lien' where id = (select id from pc_slots limit 1)",
+      ),
+    ).rejects.toThrow();
+    const g = await db.query(
+      "select contenu from pc_guide_sections where slug='regles-calendrier'",
     );
-    expect(new Set(nums).size).toBe(nums.length);
-    expect(nums).toEqual([...nums].sort((a, b) => a - b));
+    expect(g.rows).toHaveLength(1);
+    expect(g.rows[0].contenu.split("\n")).toHaveLength(10);
   });
 
   it("sous-rôles : un rôle ne peut pas être son propre parent, et la suppression du parent détache les enfants", async () => {

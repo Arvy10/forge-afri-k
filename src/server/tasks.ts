@@ -1,5 +1,5 @@
 import "server-only";
-import type { DeliverableRow, NudgeRow, PostRow, TaskRow } from "@/lib/database.types";
+import type { DeliverableRow, NudgeRow, SlotRow, TaskRow } from "@/lib/database.types";
 import { db } from "./db";
 
 export type DeliverableView = DeliverableRow & {
@@ -23,14 +23,14 @@ export async function loadTaskViews(
 ): Promise<TaskView[]> {
   if (rows.length === 0) return [];
   const ids = rows.map((r) => r.id);
-  const postIds = [...new Set(rows.map((r) => r.post_id).filter((x): x is string => !!x))];
+  const slotIds = [...new Set(rows.map((r) => r.slot_id).filter((x): x is string => !!x))];
 
-  const [deliv, nudges, posts] = await Promise.all([
+  const [deliv, nudges, slots] = await Promise.all([
     db().from("pc_task_deliverables").select("*").in("task_id", ids).order("created_at"),
     db().from("pc_nudges").select("*").in("task_id", ids).order("created_at", { ascending: false }),
-    postIds.length > 0
-      ? db().from("pc_posts").select("id, numero, idee").in("id", postIds)
-      : Promise.resolve({ data: [] as Pick<PostRow, "id" | "numero" | "idee">[] }),
+    slotIds.length > 0
+      ? db().from("pc_slots").select("id, titre").in("id", slotIds)
+      : Promise.resolve({ data: [] as Pick<SlotRow, "id" | "titre">[] }),
   ]);
 
   const deliverables = (deliv.data ?? []) as DeliverableRow[];
@@ -45,10 +45,7 @@ export async function loadTaskViews(
   for (const n of (nudges.data ?? []) as NudgeRow[])
     if (!lastNudge.has(n.task_id)) lastNudge.set(n.task_id, n);
   const postLabel = new Map(
-    ((posts.data ?? []) as Pick<PostRow, "id" | "numero" | "idee">[]).map((p) => [
-      p.id,
-      `Post n° ${p.numero}${p.idee ? ` · ${p.idee.slice(0, 40)}` : ""}`,
-    ]),
+    ((slots.data ?? []) as Pick<SlotRow, "id" | "titre">[]).map((s) => [s.id, `Post : ${s.titre}`]),
   );
 
   return rows.map((t) => {
@@ -65,7 +62,7 @@ export async function loadTaskViews(
         n && t.statut !== "fait"
           ? { ...n, par: n.par_member_id ? (names.get(n.par_member_id) ?? null) : null }
           : null,
-      postLabel: t.post_id ? (postLabel.get(t.post_id) ?? null) : null,
+      postLabel: t.slot_id ? (postLabel.get(t.slot_id) ?? null) : null,
     };
   });
 }

@@ -1,18 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import {
-  Activity,
-  CalendarClock,
-  ChevronLeft,
-  ChevronRight,
-  Flag,
-  ListChecks,
-  Megaphone,
-  Radio,
-  Users,
-} from "lucide-react";
-import { WeekBoard } from "@/components/calendar/WeekBoard";
+import { Activity, CalendarClock, Flag, ListChecks, Megaphone, Radio, Users } from "lucide-react";
 import { ActivityFeed } from "@/components/home/ActivityFeed";
 import { HeroBanner, HeroStat } from "@/components/home/HeroBanner";
 import { MyTasksList } from "@/components/home/MyTasksList";
@@ -21,29 +10,21 @@ import { PrepSoonList } from "@/components/home/PrepSoonList";
 import { Section } from "@/components/home/Section";
 import { TeamProgress } from "@/components/home/TeamProgress";
 import { UpcomingProjects } from "@/components/home/UpcomingProjects";
+import { WeekStrip } from "@/components/home/WeekStrip";
 import { buttonClass } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
-import {
-  addDaysISO,
-  formatDayLong,
-  formatWeekRange,
-  isISODate,
-  startOfWeekISO,
-  todayISO,
-  workWeekISO,
-} from "@/lib/dates";
-import type { ActivityRow, InfoRow, MilestoneRow, PostRow, TaskRow } from "@/lib/database.types";
+import { defaultWeek, groupWeeks, nextMandatory, prepSoon } from "@/lib/calendar";
+import { formatDayLong, todayISO } from "@/lib/dates";
+import type { ActivityRow, InfoRow, MilestoneRow, TaskRow } from "@/lib/database.types";
 import { InfoPreview } from "@/components/home/InfoPreview";
 import { weekProgress, type Progress } from "@/lib/progress";
 import { db } from "@/server/db";
 import { fetchTaskLites } from "@/server/progress";
-import { fetchPosts } from "@/server/posts";
+import { getDays } from "@/server/calendar";
 import { requireSession } from "@/server/session";
 import { getActiveTeam, getTeam } from "@/server/team";
 
 export const metadata: Metadata = { title: "Accueil" };
-
-type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 function greeting(now = new Date()): string {
   const hour = Number(
@@ -56,13 +37,11 @@ function greeting(now = new Date()): string {
   return hour >= 18 || hour < 4 ? "Bonsoir" : "Bonjour";
 }
 
-export default async function HomePage({ searchParams }: { searchParams: SearchParams }) {
+export default async function HomePage() {
   const auth = await requireSession();
-  const sp = await searchParams;
   const today = todayISO();
-  const raw = Array.isArray(sp.semaine) ? sp.semaine[0] : sp.semaine;
-  const monday = startOfWeekISO(raw && isISODate(raw) ? raw : today);
   const me = { id: auth.memberId, isAdmin: auth.isAdmin };
+  void me;
   const firstName = auth.member?.prenom ?? "l'administrateur";
 
   return (
@@ -73,7 +52,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
         dateLabel={`${formatDayLong(today)} ${today.slice(0, 4)}`}
       >
         <Suspense fallback={null}>
-          <HeroStats today={today} monday={startOfWeekISO(today)} memberId={auth.memberId} />
+          <HeroStats today={today} memberId={auth.memberId} />
         </Suspense>
       </HeroBanner>
 
@@ -84,35 +63,8 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
 
       {/* 2. Cette semaine */}
       <section aria-labelledby="cette-semaine" className="mb-7">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 id="cette-semaine" className="font-display text-xl font-bold md:text-2xl">
-              {monday === startOfWeekISO(today) ? "Cette semaine" : "Semaine choisie"}
-            </h2>
-            <p className="text-ink-muted text-sm">{formatWeekRange(monday)}</p>
-          </div>
-          <nav aria-label="Changer de semaine" className="flex items-center gap-2">
-            <Link
-              href={`/?semaine=${addDaysISO(monday, -7)}`}
-              aria-label="Semaine précédente"
-              className="border-line-strong bg-surface hover:bg-surface-2 inline-flex size-12 items-center justify-center rounded-lg border"
-            >
-              <ChevronLeft aria-hidden className="size-5" />
-            </Link>
-            <Link href="/" className={buttonClass("secondary")}>
-              Aujourd&apos;hui
-            </Link>
-            <Link
-              href={`/?semaine=${addDaysISO(monday, 7)}`}
-              aria-label="Semaine suivante"
-              className="border-line-strong bg-surface hover:bg-surface-2 inline-flex size-12 items-center justify-center rounded-lg border"
-            >
-              <ChevronRight aria-hidden className="size-5" />
-            </Link>
-          </nav>
-        </div>
-        <Suspense key={monday} fallback={<WeekSkeleton />}>
-          <ThisWeek monday={monday} me={me} today={today} />
+        <Suspense fallback={<WeekSkeleton />}>
+          <ThisWeek today={today} />
         </Suspense>
       </section>
 
@@ -168,7 +120,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
           hrefLabel="Calendrier"
         >
           <Suspense fallback={<Skeleton className="h-64" />}>
-            <NextPost today={today} />
+            <NextPost />
           </Suspense>
         </Section>
       </div>
@@ -191,34 +143,15 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
 }
 
 /** Pastilles de chiffres du bandeau : l'essentiel en un coup d'œil. */
-async function HeroStats({
-  today,
-  monday,
-  memberId,
-}: {
-  today: string;
-  monday: string;
-  memberId: string | null;
-}) {
-  const tomorrow = addDaysISO(today, 1);
-  const [week, prep, tasks] = await Promise.all([
-    db()
-      .from("pc_posts")
-      .select("id, statut")
-      .gte("date", monday)
-      .lte("date", addDaysISO(monday, 6)),
-    db()
-      .from("pc_posts")
-      .select("id, prep_date, statut")
-      .lte("prep_date", tomorrow)
-      .gte("date", today)
-      .in("statut", ["a_faire", "en_cours", "pret_a_valider"]),
-    fetchTaskLites(),
-  ]);
-  const posts = (week.data ?? []) as Pick<PostRow, "id" | "statut">[];
-  const published = posts.filter((p) => p.statut === "publie").length;
-  const prepCount = ((prep.data ?? []) as Pick<PostRow, "id" | "prep_date" | "statut">[]).filter(
-    (p) => p.statut === "a_faire" || (p.prep_date ?? "") >= today,
+async function HeroStats({ today, memberId }: { today: string; memberId: string | null }) {
+  const [days, tasks] = await Promise.all([getDays(), fetchTaskLites()]);
+  const week = defaultWeek(groupWeeks(days), today);
+  const mandatory = (week?.days ?? []).flatMap((d) =>
+    d.slots.filter((s) => s.priorite === "obligatoire"),
+  );
+  const published = mandatory.filter((s) => s.statut === "publie").length;
+  const prepCount = prepSoon(days, today).filter(
+    ({ slot }) => slot.priorite === "obligatoire",
   ).length;
   const team = weekProgress(tasks, today);
   const mine = memberId
@@ -227,8 +160,8 @@ async function HeroStats({
   return (
     <>
       <HeroStat
-        value={posts.length}
-        label={`posts cette semaine${published ? ` (${published} publié${published > 1 ? "s" : ""})` : ""}`}
+        value={mandatory.length}
+        label={`posts obligatoires cette semaine${published ? ` (${published} publié${published > 1 ? "s" : ""})` : ""}`}
         href="/calendrier"
       />
       <HeroStat value={prepCount} label="à préparer d'ici demain" href="#a-preparer" urgent />
@@ -269,29 +202,31 @@ async function HomeInfos({ isAdmin }: { isAdmin: boolean }) {
   );
 }
 
-async function ThisWeek({
-  monday,
-  me,
-  today,
-}: {
-  monday: string;
-  me: { id: string | null; isAdmin: boolean };
-  today: string;
-}) {
-  const [posts, people] = await Promise.all([
-    fetchPosts({ from: monday, to: addDaysISO(monday, 6) }, {}, me.id),
-    getActiveTeam(),
-  ]);
+async function ThisWeek({ today }: { today: string }) {
+  const weeks = groupWeeks(await getDays());
+  const week = defaultWeek(weeks, today);
+  if (!week)
+    return <p className="text-ink-muted text-base">Le calendrier est vide pour l&apos;instant.</p>;
   return (
-    <WeekBoard
-      days={workWeekISO(monday)}
-      posts={posts}
-      people={people}
-      me={me}
-      today={today}
-      query={{ vue: "semaine", date: monday }}
-      allowDrag={false}
-    />
+    <>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 id="cette-semaine" className="font-display text-xl font-bold md:text-2xl">
+            {week.from <= today && today <= week.to ? "Cette semaine" : `Semaine ${week.semaine}`}
+          </h2>
+          <p className="text-ink-muted text-base">
+            Semaine {week.semaine} · {week.theme}
+          </p>
+        </div>
+        <Link
+          href={`/calendrier?semaine=${week.semaine}`}
+          className={buttonClass("secondary", "min-h-12")}
+        >
+          Voir le calendrier
+        </Link>
+      </div>
+      <WeekStrip days={week.days} today={today} />
+    </>
   );
 }
 
@@ -350,44 +285,18 @@ async function RecentActivity() {
   );
 }
 
-async function NextPost({ today }: { today: string }) {
-  const { data } = await db()
-    .from("pc_posts")
-    .select("*")
-    .gte("date", today)
-    .neq("statut", "publie")
-    .order("date")
-    .order("heure")
-    .limit(1);
-  const post = ((data ?? [])[0] as PostRow | undefined) ?? null;
-  const team = await getActiveTeam();
-  return (
-    <NextPostCard
-      post={post}
-      responsable={
-        post?.responsable_id ? (team.find((m) => m.id === post.responsable_id) ?? null) : null
-      }
-    />
-  );
+async function NextPost() {
+  const [days, team] = await Promise.all([getDays(), getActiveTeam()]);
+  const next = nextMandatory(days);
+  const who = next?.slot.responsable_id
+    ? (team.find((m) => m.id === next.slot.responsable_id) ?? null)
+    : null;
+  return <NextPostCard next={next} responsable={who} />;
 }
 
 async function PrepSoon({ today }: { today: string }) {
-  const tomorrow = addDaysISO(today, 1);
-  // Les posts dont la préparation est dépassée (et pas commencée) remontent aussi : c'est le plus urgent.
-  const { data } = await db()
-    .from("pc_posts")
-    .select("*")
-    .lte("prep_date", tomorrow)
-    .gte("date", today)
-    .in("statut", ["a_faire", "en_cours", "pret_a_valider"])
-    .order("prep_date")
-    .order("date")
-    .limit(8);
-  const team = await getActiveTeam();
-  const posts = ((data ?? []) as PostRow[]).filter(
-    (p) => p.statut === "a_faire" || (p.prep_date ?? "") >= today,
-  );
-  return <PrepSoonList posts={posts} people={team} today={today} />;
+  const [days, team] = await Promise.all([getDays(), getActiveTeam()]);
+  return <PrepSoonList items={prepSoon(days, today)} people={team} today={today} />;
 }
 
 async function Upcoming() {
