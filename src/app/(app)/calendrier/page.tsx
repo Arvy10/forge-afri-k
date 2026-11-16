@@ -2,12 +2,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Download } from "lucide-react";
 import { DayCard } from "@/components/calendar/DayCard";
+import { PresentationView } from "@/components/calendar/PresentationView";
 import { TypeLegend } from "@/components/calendar/TypeLegend";
 import { WeekNav } from "@/components/calendar/WeekNav";
 import { buttonClass } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { defaultWeek, groupWeeks } from "@/lib/calendar";
+import { cn } from "@/lib/cn";
+import { buildPresentation } from "@/lib/presentation";
 import { formatDayLong, todayISO } from "@/lib/dates";
 import { getDays } from "@/server/calendar";
 import { requireSession } from "@/server/session";
@@ -35,6 +38,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
       </>
     );
 
+  const presentation = (Array.isArray(sp.vue) ? sp.vue[0] : sp.vue) === "presentation";
   const raw = Array.isArray(sp.semaine) ? sp.semaine[0] : sp.semaine;
   const asked = raw ? weeks.find((w) => String(w.semaine) === raw) : undefined;
   const week = asked ?? defaultWeek(weeks, today)!;
@@ -61,25 +65,53 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
         }
       />
 
-      <div className="space-y-4">
-        <TypeLegend />
-        <WeekNav weeks={weeks} current={week} />
+      <nav
+        aria-label="Choisir la vue"
+        className="border-line-strong bg-surface mb-4 inline-flex gap-1 rounded-xl border p-1"
+      >
+        {[
+          ["planning", "Planning", "/calendrier"],
+          ["presentation", "Présentation", "/calendrier?vue=presentation"],
+        ].map(([id, label, href]) => (
+          <Link
+            key={id}
+            href={href!}
+            aria-current={(presentation ? "presentation" : "planning") === id ? "page" : undefined}
+            className={cn(
+              "inline-flex min-h-12 items-center rounded-lg px-5 text-base font-semibold",
+              (presentation ? "presentation" : "planning") === id
+                ? "bg-forest text-on-forest"
+                : "text-ink-muted hover:bg-surface-2",
+            )}
+          >
+            {label}
+          </Link>
+        ))}
+      </nav>
 
-        <header>
-          <h2 className="font-display text-2xl font-bold">
-            Semaine {week.semaine} <span className="text-ink-muted font-medium">·</span>{" "}
-            <span className="text-accent-strong">{week.theme}</span>
-          </h2>
-        </header>
+      {presentation ? (
+        <PresentationView weeks={buildPresentation(weeks)} />
+      ) : (
+        <div className="space-y-4">
+          <TypeLegend />
+          <WeekNav weeks={weeks} current={week} />
 
-        <ul className="stagger grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {week.days.map((day) => (
-            <li key={day.id} className="min-w-0">
-              <DayCard day={day} people={people} today={today} />
-            </li>
-          ))}
-        </ul>
-      </div>
+          <header>
+            <h2 className="font-display text-2xl font-bold">
+              Semaine {week.semaine} <span className="text-ink-muted font-medium">·</span>{" "}
+              <span className="text-accent-strong">{week.theme}</span>
+            </h2>
+          </header>
+
+          <ul className="stagger grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {week.days.map((day) => (
+              <li key={day.id} className="min-w-0">
+                <DayCard day={day} people={people} today={today} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </>
   );
 }
