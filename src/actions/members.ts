@@ -53,7 +53,9 @@ export async function saveMember(id: string, input: unknown): Promise<ActionResu
     const parsed = memberSchema.safeParse(input);
     if (!parsed.success) return invalid(parsed.error);
     const { db } = await actionContext({ admin: true });
-    const { role_ids, nom, ...fields } = parsed.data;
+    const { role_ids: wanted, nom, ...fields } = parsed.data;
+    // Un observateur ne travaille pas dans l'équipe : pas de rôle.
+    const role_ids = fields.observateur ? [] : wanted;
 
     const { error } = await db
       .from("pc_members")
@@ -94,7 +96,7 @@ export async function setMyRoles(roleIds: unknown): Promise<ActionResult> {
   return safeAction(async () => {
     const parsed = z.array(z.uuid()).max(60).safeParse(roleIds);
     if (!parsed.success) throw new ActionError("Choix de rôles invalide.");
-    const { db, memberId } = await actionContext();
+    const { db, memberId } = await actionContext({ worker: true });
     if (!memberId) throw new ActionError("Choisis d'abord qui tu es.");
     await syncMemberRoles(db, memberId, [...new Set(parsed.data)]);
     refresh();

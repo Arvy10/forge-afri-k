@@ -10,6 +10,8 @@ export type MemberLite = {
   couleur: MemberColor;
   roleNames: string[];
   actif: boolean;
+  /** Observateur : consulte tout, ne travaille pas dans l'équipe. */
+  observateur: boolean;
 };
 
 export const fullName = (m: { prenom: string; nom: string | null }) =>

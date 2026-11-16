@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Download, Megaphone, UsersRound } from "lucide-react";
 import { RoleManager } from "@/components/settings/RoleManager";
-import { AccessCodeForm, TasksPolicyForm } from "@/components/settings/SettingsForms";
+import { AccessCodeForm } from "@/components/settings/SettingsForms";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { requireSession } from "@/server/session";
 import { getRoles, getRoleTasks, getTeam } from "@/server/team";
@@ -86,9 +86,26 @@ export default async function SettingsPage({
 
         <section aria-labelledby="r-taches" className={card}>
           <h2 id="r-taches" className="font-display mb-3 text-lg font-bold">
-            Ajout de tâches
+            Qui peut faire quoi
           </h2>
-          <TasksPolicyForm value={auth.settings?.tasks_add_policy ?? "tous"} />
+          <ul className="text-ink space-y-2 text-base">
+            <li>
+              <strong>Tout le monde voit tout</strong> : le calendrier, les tâches et
+              l&apos;avancement de chacun.
+            </li>
+            <li>
+              <strong>Chaque membre agit sur sa propre activité</strong> : il ajoute ses tâches, les
+              coche et dépose ses livrables.
+            </li>
+            <li>
+              <strong>Toi seul</strong> donnes des tâches aux autres, ajoutes ou retires des
+              membres, gères les rôles.
+            </li>
+            <li>
+              <strong>Un observateur</strong> consulte tout, sans rien modifier, et peut laisser un
+              rappel ou un message (à régler sur sa fiche).
+            </li>
+          </ul>
         </section>
 
         <section aria-labelledby="r-code" className={card}>

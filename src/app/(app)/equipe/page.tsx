@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { Avatar } from "@/components/ui/Avatar";
 import { QuickAddMembers } from "@/components/team/QuickAddMembers";
 import { TeamCard } from "@/components/team/TeamCard";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -21,8 +23,11 @@ export default async function TeamPage({
   const { ajout } = await searchParams;
   const today = todayISO();
   const [team, tasks] = await Promise.all([getTeam(), fetchTaskLites()]);
-  const visible = auth.isAdmin ? team : team.filter((m) => m.actif);
-  const active = team.filter((m) => m.actif);
+  const visibleAll = auth.isAdmin ? team : team.filter((m) => m.actif);
+  // Les observateurs ne travaillent pas dans l'équipe : ni avancement, ni tâches. Ils sont listés à part.
+  const visible = visibleAll.filter((m) => !m.observateur);
+  const observers = visibleAll.filter((m) => m.observateur && m.actif);
+  const active = team.filter((m) => m.actif && !m.observateur);
 
   const progressOf = (id: string) =>
     weekProgress(
@@ -43,7 +48,7 @@ export default async function TeamPage({
 
       {auth.isAdmin && <QuickAddMembers autoFocus={ajout === "1" || visible.length === 0} />}
 
-      {visible.length === 0 ? (
+      {visible.length === 0 && observers.length === 0 ? (
         !auth.isAdmin && (
           <EmptyState
             illustration="people"
@@ -99,6 +104,34 @@ export default async function TeamPage({
             ))}
           </ul>
         </>
+      )}
+
+      {observers.length > 0 && (
+        <section aria-labelledby="observation" className="mt-8">
+          <h2 id="observation" className="font-display text-lg font-bold">
+            Observation
+          </h2>
+          <p className="text-ink-muted mt-1 mb-3 text-base">
+            Ces personnes consultent tout (calendrier, tâches, avancement) sans travailler dans
+            l&apos;équipe.
+          </p>
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {observers.map((m) => (
+              <li key={m.id} className="min-w-0">
+                <Link
+                  href={`/equipe/${m.id}`}
+                  className="lift bg-surface border-line shadow-card flex min-h-16 items-center gap-3 rounded-2xl border p-3"
+                >
+                  <Avatar name={m.name} color={m.couleur} size="md" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-base font-semibold">{m.name}</span>
+                    <span className="text-ink-muted block text-sm">Observation</span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
     </>
   );

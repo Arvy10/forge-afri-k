@@ -30,6 +30,7 @@ const TABLES = [
   "pc_feature_interests",
   "pc_infos",
   "pc_role_tasks",
+  "pc_notifications",
 ];
 
 describe.skipIf(!url)("schéma pc_* et sécurité", () => {
@@ -48,6 +49,7 @@ describe.skipIf(!url)("schéma pc_* et sécurité", () => {
     await db.query(read("supabase/migrations/20261116000001_pc_role_tasks.sql"));
     await db.query(read("supabase/migrations/20261116000002_pc_calendrier_jours.sql"));
     await db.query(read("supabase/migrations/20261116000003_pc_calendrier_seed.sql"));
+    await db.query(read("supabase/migrations/20261117000001_pc_observateur_notifications.sql"));
   });
   afterAll(async () => {
     await db?.end();
@@ -62,7 +64,7 @@ describe.skipIf(!url)("schéma pc_* et sécurité", () => {
     }
   };
 
-  it("la RLS est active sur les 17 tables pc_*", async () => {
+  it("la RLS est active sur les 18 tables pc_*", async () => {
     const r = await db.query(
       "select count(*)::int as n from pg_tables where schemaname='public' and tablename like 'pc\\_%' and rowsecurity",
     );
@@ -322,5 +324,50 @@ describe.skipIf(!url)("schéma pc_* et sécurité", () => {
     ).rejects.toThrow();
     await db.query("delete from public.pc_roles where id = $1", [r]);
     expect(await n()).toBe(total);
+  });
+
+  it("observateur : faux par défaut ; notifications : types contrôlés, texte obligatoire, suppression en cascade", async () => {
+    const a = (
+      await db.query(
+        "insert into pc_members (prenom) values ('Obs Test') returning id, observateur",
+      )
+    ).rows[0];
+    expect(a.observateur).toBe(false);
+    const b = (
+      await db.query(
+        "insert into pc_members (prenom, observateur) values ('Fortunée Test', true) returning id",
+      )
+    ).rows[0].id;
+    await db.query(
+      "insert into pc_notifications (member_id, de_member_id, kind, texte) values ($1,$2,'message','Il manque la légende')",
+      [a.id, b],
+    );
+    await expect(
+      db.query("insert into pc_notifications (member_id, kind, texte) values ($1,'autre','x')", [
+        a.id,
+      ]),
+    ).rejects.toThrow();
+    await expect(
+      db.query(
+        "insert into pc_notifications (member_id, kind, texte) values ($1,'message','   ')",
+        [a.id],
+      ),
+    ).rejects.toThrow();
+    const unread = await db.query(
+      "select count(*)::int as n from pc_notifications where member_id=$1 and lu_le is null",
+      [a.id],
+    );
+    expect(unread.rows[0].n).toBe(1);
+    // si l'expéditeur disparaît, le message reste (expéditeur inconnu) ; si le destinataire disparaît, il part avec
+    await db.query("delete from pc_members where id=$1", [b]);
+    expect(
+      (await db.query("select de_member_id from pc_notifications where member_id=$1", [a.id]))
+        .rows[0].de_member_id,
+    ).toBeNull();
+    await db.query("delete from pc_members where id=$1", [a.id]);
+    expect(
+      (await db.query("select count(*)::int as n from pc_notifications where member_id=$1", [a.id]))
+        .rows[0].n,
+    ).toBe(0);
   });
 });

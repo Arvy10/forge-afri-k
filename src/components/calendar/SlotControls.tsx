@@ -22,7 +22,7 @@ export function SlotControls({
 }: {
   slot: Pick<SlotRow, "id" | "responsable_id" | "statut" | "lien" | "a_preparer_le">;
   people: MemberLite[];
-  me: { id: string | null; isAdmin: boolean };
+  me: { id: string | null; isAdmin: boolean; readOnly?: boolean };
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -34,7 +34,7 @@ export function SlotControls({
   const [prep, setPrep] = useState(slot.a_preparer_le ?? "");
 
   const taken = slot.responsable_id !== null && slot.responsable_id !== me.id;
-  const canEdit = me.isAdmin || (!!me.id && !taken);
+  const canEdit = me.isAdmin || (!!me.id && !taken && !me.readOnly);
   const canClaim = !me.isAdmin && !!me.id && slot.responsable_id === null;
   const options = me.isAdmin
     ? people
@@ -83,7 +83,11 @@ export function SlotControls({
 
       {!canEdit && (
         <p className="text-ink-muted text-base">
-          Ce post est pris en charge par {owner?.name ?? "quelqu'un d'autre"}.
+          {me.readOnly
+            ? owner
+              ? `Consultation seule. Ce post est pris en charge par ${owner.name}.`
+              : "Consultation seule. Ce post n'a pas encore de responsable."
+            : `Ce post est pris en charge par ${owner?.name ?? "quelqu'un d'autre"}.`}
         </p>
       )}
 

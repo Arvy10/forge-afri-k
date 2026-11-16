@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { ActionError } from "@/lib/action";
 import type { MemberRow, SettingsRow } from "@/lib/database.types";
 import { envProblems, serverEnv } from "@/lib/env";
+import { OBSERVER_REASON } from "@/lib/permissions";
 import { db } from "./db";
 import {
   ADMIN_COOKIE,
@@ -25,10 +26,19 @@ export type Auth = {
   memberId: string | null;
   member: MemberRow | null;
   isAdmin: boolean;
+  /** Observateur : consulte tout, ne travaille pas dans l'équipe (lecture seule, rappels et messages autorisés). */
+  isObserver: boolean;
   settings: SettingsRow | null;
 };
 
-const NONE: Auth = { valid: false, memberId: null, member: null, isAdmin: false, settings: null };
+const NONE: Auth = {
+  valid: false,
+  memberId: null,
+  member: null,
+  isAdmin: false,
+  isObserver: false,
+  settings: null,
+};
 
 const cookieBase = () => ({
   httpOnly: true,
@@ -67,7 +77,14 @@ export const getAuth = cache(async (): Promise<Auth> => {
   const admin = await verifyAdminToken(store.get(ADMIN_COOKIE)?.value, secret);
   const isAdmin = !!admin && admin.v === settings.code_version;
 
-  return { valid: true, memberId: member?.id ?? null, member, isAdmin, settings };
+  return {
+    valid: true,
+    memberId: member?.id ?? null,
+    member,
+    isAdmin,
+    isObserver: !!member?.observateur,
+    settings,
+  };
 });
 
 /** Pour les pages : sans session valable, retour à l'écran du code. */
@@ -90,12 +107,20 @@ export async function requireIdentity(): Promise<Auth & { member: MemberRow }> {
 }
 
 /** Pour les Server Actions : lève une erreur lisible au lieu de rediriger. */
-export async function actionContext(options: { admin?: boolean } = {}) {
+export async function actionContext(options: { admin?: boolean; worker?: boolean } = {}) {
   const auth = await getAuth();
   if (!auth.valid) throw new ActionError("Ta session a expiré. Entre de nouveau le code d'accès.");
   if (options.admin && !auth.isAdmin)
     throw new ActionError("Cette action est réservée au mode administrateur.");
-  return { db: db(), auth, memberId: auth.memberId, isAdmin: auth.isAdmin };
+  // `worker` : action de travail (modifier une tâche, un livrable, un créneau…). Interdite à un observateur.
+  if (options.worker && !auth.isAdmin && auth.isObserver) throw new ActionError(OBSERVER_REASON);
+  return {
+    db: db(),
+    auth,
+    memberId: auth.memberId,
+    isAdmin: auth.isAdmin,
+    isObserver: auth.isObserver,
+  };
 }
 
 /* ------------------------------- Écriture des cookies ------------------------------- */

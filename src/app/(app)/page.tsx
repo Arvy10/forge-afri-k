@@ -22,7 +22,7 @@ import { db } from "@/server/db";
 import { fetchTaskLites } from "@/server/progress";
 import { getDays } from "@/server/calendar";
 import { requireSession } from "@/server/session";
-import { getActiveTeam, getTeam } from "@/server/team";
+import { getActiveTeam, getTeam, getWorkers } from "@/server/team";
 
 export const metadata: Metadata = { title: "Accueil" };
 
@@ -43,6 +43,8 @@ export default async function HomePage() {
   const me = { id: auth.memberId, isAdmin: auth.isAdmin };
   void me;
   const firstName = auth.member?.prenom ?? "l'administrateur";
+  // Un observateur consulte : pas de « mes tâches » (il n'a pas d'espace de travail).
+  const observer = auth.isObserver && !auth.isAdmin;
 
   return (
     <>
@@ -52,7 +54,7 @@ export default async function HomePage() {
         dateLabel={`${formatDayLong(today)} ${today.slice(0, 4)}`}
       >
         <Suspense fallback={null}>
-          <HeroStats today={today} memberId={auth.memberId} />
+          <HeroStats today={today} memberId={observer ? null : auth.memberId} />
         </Suspense>
       </HeroBanner>
 
@@ -76,24 +78,26 @@ export default async function HomePage() {
           id="avancement"
           href="/equipe"
           hrefLabel="Équipe"
-          className="lg:col-span-3"
+          className={observer ? "lg:col-span-5" : "lg:col-span-3"}
         >
           <Suspense fallback={<Skeleton className="h-48" />}>
             <TeamProgressBlock today={today} />
           </Suspense>
         </Section>
-        <Section
-          title="Mes tâches"
-          icon={ListChecks}
-          id="mes-taches"
-          href="/mon-espace"
-          hrefLabel="Mon espace"
-          className="lg:col-span-2"
-        >
-          <Suspense fallback={<Skeleton className="h-48" />}>
-            <MyOpenTasks today={today} memberId={auth.memberId} />
-          </Suspense>
-        </Section>
+        {!observer && (
+          <Section
+            title="Mes tâches"
+            icon={ListChecks}
+            id="mes-taches"
+            href="/mon-espace"
+            hrefLabel="Mon espace"
+            className="lg:col-span-2"
+          >
+            <Suspense fallback={<Skeleton className="h-48" />}>
+              <MyOpenTasks today={today} memberId={auth.memberId} />
+            </Suspense>
+          </Section>
+        )}
       </div>
 
       <div className="stagger mb-6 grid gap-4 lg:grid-cols-3">
@@ -231,7 +235,7 @@ async function ThisWeek({ today }: { today: string }) {
 }
 
 async function TeamProgressBlock({ today }: { today: string }) {
-  const [team, tasks] = await Promise.all([getActiveTeam(), fetchTaskLites()]);
+  const [team, tasks] = await Promise.all([getWorkers(), fetchTaskLites()]);
   const byMember = new Map<string, Progress>(
     team.map((m) => [
       m.id,

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { UserRound } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -8,6 +9,7 @@ import { MyRolesPicker } from "@/components/team/MyRolesPicker";
 import { RoleCards } from "@/components/team/RoleCards";
 import { TaskGroups } from "@/components/tasks/TaskGroups";
 import { todayISO } from "@/lib/dates";
+import { canWork } from "@/lib/permissions";
 import { weekProgress } from "@/lib/progress";
 import { requireSession } from "@/server/session";
 import { loadTaskPage } from "@/server/task-page";
@@ -18,7 +20,10 @@ export const metadata: Metadata = { title: "Mon espace" };
 
 export default async function MySpacePage() {
   const auth = await requireSession();
+  // Un observateur n'a pas d'espace de travail : il consulte l'accueil, le calendrier et l'équipe.
+  if (auth.isObserver && !auth.isAdmin) redirect("/");
   const member = auth.member;
+  const actor = { id: auth.memberId, isAdmin: auth.isAdmin, isObserver: auth.isObserver };
 
   // Administrateur entré sans avoir choisi qui il est : on l'invite à le faire.
   if (!member) {
@@ -52,7 +57,7 @@ export default async function MySpacePage() {
   for (const m of team.filter((x) => x.actif))
     for (const id of m.roleIds) holders[id] = (holders[id] ?? 0) + 1;
   const progress = weekProgress(tasks, today);
-  const canAdd = auth.isAdmin || auth.settings?.tasks_add_policy !== "admin";
+  const canAdd = canWork(actor);
 
   return (
     <div className="max-w-3xl">
@@ -72,11 +77,7 @@ export default async function MySpacePage() {
         roles={roles}
         memberRoleIds={me?.roleIds ?? []}
         roleTasks={roleTasks}
-        taskTarget={
-          auth.isAdmin || auth.settings?.tasks_add_policy !== "admin"
-            ? { memberId: null, label: "de mon espace" }
-            : undefined
-        }
+        taskTarget={canWork(actor) ? { memberId: null, label: "de mon espace" } : undefined}
       />
       <div className="-mt-3 mb-6">
         <MyRolesPicker roles={roles} mine={me?.roleIds ?? []} holders={holders} />

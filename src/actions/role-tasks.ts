@@ -23,13 +23,11 @@ export async function addRoleTasks(
     const target = memberId === undefined || memberId === null ? null : uuid.safeParse(memberId);
     if (target && !target.success) throw new ActionError("Membre introuvable.");
 
-    const { db, auth, memberId: me, isAdmin } = await actionContext();
+    const { db, memberId: me, isAdmin } = await actionContext({ worker: true });
     const forMember = target?.data ?? me;
     if (!forMember) throw new ActionError("Choisis d'abord qui tu es.");
     if (forMember !== me && !isAdmin)
       throw new ActionError("Seul l'administrateur peut ajouter des tâches à quelqu'un d'autre.");
-    if (auth.settings?.tasks_add_policy === "admin" && !isAdmin)
-      throw new ActionError("L'administrateur a réservé l'ajout de tâches. Demande-lui.");
 
     const { data: templates } = await db
       .from("pc_role_tasks")

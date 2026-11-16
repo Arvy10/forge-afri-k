@@ -9,7 +9,7 @@ import { CONTENT_TYPE_META } from "@/lib/constants";
 import { formatDayLong, isISODate, todayISO } from "@/lib/dates";
 import { getDays } from "@/server/calendar";
 import { requireSession } from "@/server/session";
-import { getActiveTeam } from "@/server/team";
+import { getWorkers } from "@/server/team";
 
 export const metadata: Metadata = { title: "Fiche du jour" };
 
@@ -20,7 +20,7 @@ export default async function DayPage({ params }: { params: Promise<{ date: stri
   const { date } = await params;
   if (!isISODate(date)) notFound();
   const auth = await requireSession();
-  const [days, people] = await Promise.all([getDays(), getActiveTeam()]);
+  const [days, people] = await Promise.all([getDays(), getWorkers()]);
   const i = days.findIndex((d) => d.date === date);
   const day = days[i];
   if (!day) notFound();
@@ -28,7 +28,8 @@ export default async function DayPage({ params }: { params: Promise<{ date: stri
   const next = days[i + 1];
   const today = todayISO();
   const { main, extra } = splitSlots(day);
-  const me = { id: auth.memberId, isAdmin: auth.isAdmin };
+  const readOnly = auth.isObserver && !auth.isAdmin;
+  const me = { id: readOnly ? null : auth.memberId, isAdmin: auth.isAdmin, readOnly };
 
   return (
     <div className="mx-auto max-w-4xl">

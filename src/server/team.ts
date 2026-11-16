@@ -39,6 +39,7 @@ export const getTeam = cache(async (): Promise<Member[]> => {
       name: fullName(m),
       couleur: m.couleur,
       actif: m.actif,
+      observateur: m.observateur,
       ordre: m.ordre,
       roleIds: ids,
       roleNames: ids.map((id) => roleName.get(id)).filter((n): n is string => !!n),
@@ -48,4 +49,9 @@ export const getTeam = cache(async (): Promise<Member[]> => {
 
 export const getActiveTeam = cache(async (): Promise<Member[]> =>
   (await getTeam()).filter((m) => m.actif),
+);
+
+/** Les membres qui travaillent dans l'équipe (sans les observateurs) : avancement, attribution, responsables. */
+export const getWorkers = cache(async (): Promise<Member[]> =>
+  (await getActiveTeam()).filter((m) => !m.observateur),
 );

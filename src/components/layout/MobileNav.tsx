@@ -15,7 +15,7 @@ import { UserCard, type ShellUser } from "./UserCard";
 export function MobileNav({ user }: { user: ShellUser }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const primary = NAV_ITEMS.filter((i) => i.primary);
+  const primary = NAV_ITEMS.filter((i) => i.primary && !(user.isObserver && i.hideForObserver));
   const moreActive = !primary.some((i) => isActivePath(pathname, i.href));
 
   return (
@@ -78,7 +78,11 @@ export function MobileNav({ user }: { user: ShellUser }) {
             </Dialog.Close>
           </div>
           <nav aria-label="Toutes les sections" className="flex-1 overflow-y-auto">
-            <NavLinks isAdmin={user.isAdmin} onNavigate={() => setOpen(false)} />
+            <NavLinks
+              isAdmin={user.isAdmin}
+              isObserver={user.isObserver}
+              onNavigate={() => setOpen(false)}
+            />
           </nav>
           <UserCard user={user} />
         </Dialog.Content>

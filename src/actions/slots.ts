@@ -24,7 +24,7 @@ export async function updateSlot(id: string, input: unknown): Promise<ActionResu
     const patch = parsed.data;
     if (Object.keys(patch).length === 0) return { ok: true };
 
-    const { db, memberId, isAdmin } = await actionContext();
+    const { db, memberId, isAdmin } = await actionContext({ worker: true });
     const { data } = await db.from("pc_slots").select("*").eq("id", id).maybeSingle();
     const slot = data as SlotRow | null;
     if (!slot) throw new ActionError("Ce créneau n'existe plus. Recharge la page.");

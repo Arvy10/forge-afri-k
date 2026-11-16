@@ -28,7 +28,7 @@ export function SlotSection({
   day: Pick<DayWithSlots, "date">;
   slot: SlotRow;
   people: MemberLite[];
-  me: { id: string | null; isAdmin: boolean };
+  me: { id: string | null; isAdmin: boolean; readOnly?: boolean };
   today: string;
 }) {
   const main = slot.priorite === "obligatoire";

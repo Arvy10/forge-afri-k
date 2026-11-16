@@ -58,7 +58,7 @@ export function TaskItem({
   const canToggle = mine || me.isAdmin;
   const canDeposit = mine || me.isAdmin;
   const canNudge = !done && !mine && !!owner;
-  const canEdit = me.isAdmin || mine || (!!me.id && task.cree_par === me.id);
+  const canEdit = me.isAdmin || mine;
 
   return (
     <article

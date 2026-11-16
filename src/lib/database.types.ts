@@ -21,6 +21,8 @@ export type MemberRow = {
   couleur: MemberColor;
   photo_path: string | null;
   actif: boolean;
+  /** Consulte tout sans travailler dans l'équipe (pas de tâches, pas de rôle). */
+  observateur: boolean;
   ordre: number;
   created_at: string;
   updated_at: string;
@@ -50,6 +52,17 @@ export type RoleTaskRow = {
   ordre: number;
   created_at: string;
   updated_at: string;
+};
+export type NotificationKind = "relance" | "message";
+export type NotificationRow = {
+  id: string;
+  member_id: string;
+  de_member_id: string | null;
+  kind: NotificationKind;
+  task_id: string | null;
+  texte: string;
+  lu_le: string | null;
+  created_at: string;
 };
 export type MemberRoleRow = { member_id: string; role_id: string; created_at: string };
 
@@ -218,6 +231,7 @@ export type Database = {
       pc_milestones: Table<MilestoneRow, "periode" | "titre">;
       pc_settings: Table<SettingsRow>;
       pc_infos: Table<InfoRow, "titre">;
+      pc_notifications: Table<NotificationRow, "member_id" | "kind" | "texte">;
       pc_role_tasks: Table<RoleTaskRow, "role_id" | "titre">;
       pc_login_attempts: Table<LoginAttemptRow, "ip_hash" | "kind">;
       pc_feature_interests: Table<FeatureInterestRow, "member_id" | "feature">;

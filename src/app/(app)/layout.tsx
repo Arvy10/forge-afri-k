@@ -4,6 +4,8 @@ import { MobileNav } from "@/components/layout/MobileNav";
 import { MobileTopBar } from "@/components/layout/MobileTopBar";
 import { Sidebar } from "@/components/layout/Sidebar";
 import type { ShellUser } from "@/components/layout/UserCard";
+import { UnreadBanner } from "@/components/notifications/UnreadBanner";
+import { getInbox } from "@/server/notifications";
 import { requireSession } from "@/server/session";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -17,9 +19,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       ? [auth.member.prenom, auth.member.nom].filter(Boolean).join(" ")
       : "Administrateur",
     color: auth.member?.couleur ?? "orange",
-    roleLabel: auth.isAdmin ? "Mode administrateur" : "Membre du pôle",
+    roleLabel: auth.isAdmin
+      ? "Mode administrateur"
+      : auth.isObserver
+        ? "Observation"
+        : "Membre du pôle",
     isAdmin: auth.isAdmin,
+    isObserver: auth.isObserver,
   };
+
+  const inbox = await getInbox(auth.memberId);
 
   return (
     <div className="min-h-dvh lg:pl-72">
@@ -29,12 +38,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       >
         Aller au contenu
       </a>
-      <Sidebar user={shellUser} />
-      <MobileTopBar user={shellUser} />
+      <Sidebar user={shellUser} inbox={inbox} />
+      <MobileTopBar user={shellUser} inbox={inbox} />
       <main
         id="contenu"
         className="stagger mx-auto w-full max-w-[88rem] px-4 pt-5 pb-28 md:px-8 md:pt-8 lg:pb-12"
       >
+        {auth.memberId && <UnreadBanner unread={inbox.unread} />}
         {children}
       </main>
       <MobileNav user={shellUser} />

@@ -3,11 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { KeyRound, LogOut } from "lucide-react";
-import { changeAccessCode, setTasksPolicy, signOutEveryone } from "@/actions/settings";
+import { changeAccessCode, signOutEveryone } from "@/actions/settings";
 import { Button } from "@/components/ui/Button";
 import { FormError } from "@/components/ui/Field";
-import type { TasksPolicy } from "@/lib/constants";
-import { cn } from "@/lib/cn";
 
 function Ok({ text }: { text: string | null }) {
   if (!text) return null;
@@ -18,73 +16,6 @@ function Ok({ text }: { text: string | null }) {
     >
       {text}
     </p>
-  );
-}
-
-/** Qui peut ajouter des tâches ? */
-export function TasksPolicyForm({ value }: { value: TasksPolicy }) {
-  const router = useRouter();
-  const [policy, setPolicy] = useState<TasksPolicy>(value);
-  const [error, setError] = useState<string | null>(null);
-  const [ok, setOk] = useState<string | null>(null);
-  const [pending, start] = useTransition();
-
-  const choose = (next: TasksPolicy) => {
-    const previous = policy;
-    setPolicy(next);
-    setError(null);
-    setOk(null);
-    start(async () => {
-      const res = await setTasksPolicy({ tasks_add_policy: next });
-      if (!res.ok) {
-        setPolicy(previous);
-        return setError(res.error);
-      }
-      setOk("Réglage enregistré.");
-      router.refresh();
-    });
-  };
-
-  const option = (v: TasksPolicy, title: string, text: string) => (
-    <label
-      className={cn(
-        "border-line-strong bg-canvas flex min-h-16 cursor-pointer items-start gap-3 rounded-xl border p-3",
-        policy === v && "border-accent-strong bg-accent-soft",
-      )}
-    >
-      <input
-        type="radio"
-        name="policy"
-        value={v}
-        checked={policy === v}
-        disabled={pending}
-        onChange={() => choose(v)}
-        className="accent-accent-strong mt-1 size-5"
-      />
-      <span>
-        <span className="block text-sm font-semibold">{title}</span>
-        <span className="text-ink-muted block text-sm">{text}</span>
-      </span>
-    </label>
-  );
-
-  return (
-    <div className="space-y-3">
-      <FormError message={error} />
-      <Ok text={ok} />
-      <fieldset className="space-y-2" aria-label="Qui peut ajouter des tâches">
-        {option(
-          "tous",
-          "Tous les membres",
-          "Chacun peut ajouter une tâche, pour lui-même ou pour quelqu'un d'autre. (Réglage par défaut.)",
-        )}
-        {option(
-          "admin",
-          "Seulement l'administrateur",
-          "Les membres ne voient plus le bouton « Ajouter une tâche ».",
-        )}
-      </fieldset>
-    </div>
   );
 }
 

@@ -12,6 +12,8 @@ import { todayISO } from "@/lib/dates";
 import { weekProgress } from "@/lib/progress";
 import { requireSession } from "@/server/session";
 import { loadTaskPage } from "@/server/task-page";
+import { SendMessageDialog } from "@/components/notifications/SendMessageDialog";
+import { canWork } from "@/lib/permissions";
 import { summarizeRoles } from "@/lib/roles";
 import { getRoles, getRoleTasks, getTeam } from "@/server/team";
 
@@ -33,7 +35,10 @@ export default async function MemberSpacePage({ params }: { params: Promise<{ id
   ]);
   const progress = weekProgress(tasks, today);
   const isMe = auth.memberId === id;
-  const canAdd = auth.isAdmin || auth.settings?.tasks_add_policy !== "admin";
+  // Ajouter une tâche sur une fiche : l'administrateur pour n'importe qui ; un membre seulement sur la sienne.
+  const canAdd =
+    auth.isAdmin ||
+    (isMe && canWork({ id: auth.memberId, isAdmin: false, isObserver: auth.isObserver }));
 
   return (
     <div className="max-w-3xl">
@@ -52,7 +57,9 @@ export default async function MemberSpacePage({ params }: { params: Promise<{ id
             {member.name}
           </h1>
           <p className="text-ink-muted mt-0.5 text-sm md:text-base">
-            {summarizeRoles(member.roleNames)}
+            {member.observateur
+              ? "Observation : consulte tout, ne travaille pas dans l'équipe"
+              : summarizeRoles(member.roleNames)}
           </p>
           {!member.actif && (
             <span className="bg-surface-2 text-ink-muted mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold">
@@ -61,6 +68,12 @@ export default async function MemberSpacePage({ params }: { params: Promise<{ id
           )}
         </div>
       </header>
+
+      {!isMe && member.actif && (auth.memberId || auth.isAdmin) && (
+        <div className="mb-6">
+          <SendMessageDialog toId={member.id} toName={member.prenom} />
+        </div>
+      )}
 
       <RoleCards
         roles={roles}
@@ -110,6 +123,7 @@ export default async function MemberSpacePage({ params }: { params: Promise<{ id
           isSelf={isMe}
           taskCount={tasks.length}
           initial={{
+            observateur: member.observateur,
             prenom: member.prenom,
             nom: member.nom ?? "",
             couleur: member.couleur,

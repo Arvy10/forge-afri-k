@@ -24,11 +24,19 @@ export type NavItem = {
   /** Présent dans la barre du bas sur mobile. */
   primary?: boolean;
   adminOnly?: boolean;
+  /** Masqué pour un observateur (il n'a pas d'espace de travail). */
+  hideForObserver?: boolean;
 };
 
 export const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Accueil", icon: House, primary: true },
-  { href: "/mon-espace", label: "Mon espace", icon: ClipboardCheck, primary: true },
+  {
+    href: "/mon-espace",
+    label: "Mon espace",
+    icon: ClipboardCheck,
+    primary: true,
+    hideForObserver: true,
+  },
   { href: "/calendrier", label: "Calendrier", icon: CalendarDays, primary: true },
   { href: "/equipe", label: "Équipe", icon: Users, primary: true },
   { href: "/infos", label: "Infos", icon: Megaphone },
@@ -41,8 +49,8 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/reglages", label: "Administration", icon: Settings, adminOnly: true },
 ];
 
-export function navFor(isAdmin: boolean): NavItem[] {
-  return NAV_ITEMS.filter((i) => !i.adminOnly || isAdmin);
+export function navFor(isAdmin: boolean, isObserver = false): NavItem[] {
+  return NAV_ITEMS.filter((i) => (!i.adminOnly || isAdmin) && !(isObserver && i.hideForObserver));
 }
 
 export function isActivePath(pathname: string, href: string) {

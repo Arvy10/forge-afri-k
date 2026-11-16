@@ -5,11 +5,19 @@ import { usePathname } from "next/navigation";
 import { isActivePath, navFor } from "@/lib/nav";
 import { cn } from "@/lib/cn";
 
-export function NavLinks({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate?: () => void }) {
+export function NavLinks({
+  isAdmin,
+  isObserver = false,
+  onNavigate,
+}: {
+  isAdmin: boolean;
+  isObserver?: boolean;
+  onNavigate?: () => void;
+}) {
   const pathname = usePathname();
   return (
     <ul className="space-y-1">
-      {navFor(isAdmin).map(({ href, label, icon: Icon, soon }) => {
+      {navFor(isAdmin, isObserver).map(({ href, label, icon: Icon, soon }) => {
         const active = isActivePath(pathname, href);
         return (
           <li key={href}>

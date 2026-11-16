@@ -81,7 +81,9 @@ function Form({
       member_id: task
         ? (task.member_id ?? "")
         : state.mode === "new"
-          ? (state.defaultMemberId ?? me.id ?? "")
+          ? me.isAdmin
+            ? (state.defaultMemberId ?? me.id ?? "")
+            : (me.id ?? "")
           : "",
       echeance: task?.echeance ?? "",
       priorite: task?.priorite ?? "normale",
@@ -133,22 +135,30 @@ function Form({
           error={errors.titre?.message}
           {...register("titre")}
         />
-        <SelectField
-          label="Pour qui ?"
-          disabled={editing && !me.isAdmin}
-          hint={
-            editing && !me.isAdmin ? "Seul l'administrateur peut réassigner une tâche." : undefined
-          }
-          error={errors.member_id?.message}
-          {...register("member_id")}
-        >
-          <option value="">Personne pour l&apos;instant</option>
-          {members.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.name}
-            </option>
-          ))}
-        </SelectField>
+        {me.isAdmin ? (
+          <SelectField
+            label="Pour qui ?"
+            error={errors.member_id?.message}
+            {...register("member_id")}
+          >
+            <option value="">Personne pour l&apos;instant</option>
+            {members
+              .filter((m) => !m.observateur || m.id === task?.member_id)
+              .map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
+              ))}
+          </SelectField>
+        ) : (
+          <>
+            <input type="hidden" {...register("member_id")} />
+            <p className="bg-surface-2 text-ink rounded-xl px-3 py-2.5 text-base">
+              Cette tâche est pour <strong>toi</strong>. Seul l&apos;administrateur donne des tâches
+              aux autres.
+            </p>
+          </>
+        )}
         <div className="grid grid-cols-2 gap-3">
           <TextField
             label="Pour le"

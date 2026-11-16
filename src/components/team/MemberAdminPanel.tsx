@@ -35,7 +35,13 @@ export function MemberAdminPanel({
   taskCount,
 }: {
   memberId: string;
-  initial: { prenom: string; nom: string; couleur: MemberColor; role_ids: string[] };
+  initial: {
+    prenom: string;
+    nom: string;
+    couleur: MemberColor;
+    role_ids: string[];
+    observateur: boolean;
+  };
   roles: RoleRow[];
   actif: boolean;
   /** C'est la personne connectée : elle ne peut pas se supprimer. */
@@ -60,6 +66,7 @@ export function MemberAdminPanel({
     defaultValues: initial,
   });
   const couleur = useWatch({ control, name: "couleur" });
+  const observateur = useWatch({ control, name: "observateur" });
 
   return (
     <section
@@ -132,28 +139,47 @@ export function MemberAdminPanel({
           </div>
         </fieldset>
 
-        <fieldset className="space-y-2">
-          <legend className="text-sm font-medium">Rôles (un ou plusieurs)</legend>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {flattenRoles(roles).map(({ role: r, depth }) => (
-              <label
-                key={r.id}
-                className="border-line-strong bg-canvas has-[:checked]:border-accent-strong has-[:checked]:bg-accent-soft flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-3 text-sm"
-              >
-                <input
-                  type="checkbox"
-                  value={r.id}
-                  className="accent-accent-strong size-5"
-                  {...register("role_ids")}
-                />
-                <span className={depth === 1 ? "text-ink-muted" : "font-medium"}>
-                  {depth === 1 && "↳ "}
-                  {r.nom}
-                </span>
-              </label>
-            ))}
-          </div>
-        </fieldset>
+        <label className="border-line-strong bg-canvas has-[:checked]:border-accent-strong has-[:checked]:bg-accent-soft flex min-h-12 cursor-pointer items-start gap-3 rounded-xl border p-3">
+          <input
+            type="checkbox"
+            className="accent-accent-strong mt-0.5 size-5 shrink-0"
+            {...register("observateur")}
+          />
+          <span>
+            <span className="block text-base font-semibold">
+              Observateur (ne travaille pas dans l&apos;équipe)
+            </span>
+            <span className="text-ink-muted block text-base">
+              Consulte tout : calendrier, tâches, avancement de chacun. Ne modifie rien, n&apos;a ni
+              tâche ni rôle, mais peut laisser un rappel ou un message.
+            </span>
+          </span>
+        </label>
+
+        {!observateur && (
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-medium">Rôles (un ou plusieurs)</legend>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {flattenRoles(roles).map(({ role: r, depth }) => (
+                <label
+                  key={r.id}
+                  className="border-line-strong bg-canvas has-[:checked]:border-accent-strong has-[:checked]:bg-accent-soft flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-3 text-sm"
+                >
+                  <input
+                    type="checkbox"
+                    value={r.id}
+                    className="accent-accent-strong size-5"
+                    {...register("role_ids")}
+                  />
+                  <span className={depth === 1 ? "text-ink-muted" : "font-medium"}>
+                    {depth === 1 && "↳ "}
+                    {r.nom}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        )}
 
         <div className="flex flex-wrap gap-2">
           <Button type="submit" loading={pending} className="min-h-12">

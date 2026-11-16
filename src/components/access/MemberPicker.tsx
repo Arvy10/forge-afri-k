@@ -45,7 +45,7 @@ export function MemberPicker({ members }: { members: MemberLite[] }) {
               <span className="min-w-0 flex-1">
                 <span className="font-display block truncate text-lg font-bold">{m.name}</span>
                 <span className="text-ink-muted block truncate text-sm">
-                  {m.roleNames.join(" · ") || "Rôle à définir"}
+                  {m.observateur ? "Observation" : m.roleNames.join(" · ") || "Rôle à définir"}
                 </span>
               </span>
               <ChevronRight aria-hidden className="text-ink-muted size-5 shrink-0" />

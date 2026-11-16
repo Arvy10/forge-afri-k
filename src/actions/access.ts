@@ -77,21 +77,22 @@ export async function submitAccessCode(input: unknown): Promise<ActionResult> {
 
 /** Écran 2 : « Qui es-tu ? ». Un clic = « je suis cette personne » (mémorisé). */
 export async function chooseMember(memberId: string): Promise<ActionResult> {
-  const result = await safeAction(async () => {
+  const result = await safeAction<{ observer: boolean }>(async () => {
     if (!z.uuid().safeParse(memberId).success) throw new ActionError("Membre introuvable.");
     const { db } = await actionContext();
     const { data } = await db
       .from("pc_members")
-      .select("id")
+      .select("id, observateur")
       .eq("id", memberId)
       .eq("actif", true)
       .maybeSingle();
     if (!data) throw new ActionError("Ce membre n'existe plus ou a été désactivé.");
     await startSession(memberId);
-    return { ok: true };
+    return { ok: true, data: { observer: !!data.observateur } };
   });
   if (!result.ok) return result;
-  redirect("/mon-espace");
+  // Un observateur n'a pas d'espace de travail : il arrive sur l'accueil.
+  redirect(result.data?.observer ? "/" : "/mon-espace");
 }
 
 export async function leaveSession(): Promise<void> {

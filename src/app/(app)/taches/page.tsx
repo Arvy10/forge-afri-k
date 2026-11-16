@@ -4,6 +4,7 @@ import { TaskFilters } from "@/components/tasks/TaskFilters";
 import { TasksOverview } from "@/components/tasks/TasksOverview";
 import { todayISO } from "@/lib/dates";
 import { filterTasks, parseTaskQuery } from "@/lib/tasks-params";
+import { canWork } from "@/lib/permissions";
 import { requireSession } from "@/server/session";
 import { loadTaskPage } from "@/server/task-page";
 import { getTeam } from "@/server/team";
@@ -20,7 +21,7 @@ export default async function TasksPage({
   const today = todayISO();
   const [{ tasks, postOptions }, team] = await Promise.all([loadTaskPage(), getTeam()]);
   const visible = filterTasks(tasks, query, auth.memberId, today);
-  const canAdd = auth.isAdmin || auth.settings?.tasks_add_policy !== "admin";
+  const canAdd = canWork({ id: auth.memberId, isAdmin: auth.isAdmin, isObserver: auth.isObserver });
 
   return (
     <>
@@ -28,7 +29,11 @@ export default async function TasksPage({
         title="Toutes les tâches"
         description="Ce qu'il reste à faire, par qui et pour quand. Chacun coche ses propres tâches."
       />
-      <TaskFilters query={query} members={team.filter((m) => m.actif)} canUseMe={!!auth.memberId} />
+      <TaskFilters
+        query={query}
+        members={team.filter((m) => m.actif && !m.observateur)}
+        canUseMe={!!auth.memberId && !auth.isObserver}
+      />
       <TasksOverview
         key={JSON.stringify(query)}
         tasks={visible}

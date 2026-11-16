@@ -41,7 +41,7 @@ export async function addDeliverableLink(input: unknown): Promise<ActionResult> 
   return safeAction(async () => {
     const parsed = deliverableLinkSchema.safeParse(input);
     if (!parsed.success) return invalid(parsed.error);
-    const ctx = await actionContext();
+    const ctx = await actionContext({ worker: true });
     await ownTask(ctx, parsed.data.task_id);
     const nom =
       parsed.data.nom ||
@@ -76,7 +76,7 @@ export async function prepareDeliverableUpload(
       throw new ActionError(
         "Ce fichier dépasse 50 Mo. Dépose-le sur Drive ou WeTransfer et colle le lien à la place.",
       );
-    const ctx = await actionContext();
+    const ctx = await actionContext({ worker: true });
     await ownTask(ctx, parsed.data.task_id);
     const path = `${parsed.data.task_id}/${crypto.randomUUID()}-${safeName(parsed.data.file_name)}`;
     const { data, error } = await ctx.db.storage.from(BUCKET).createSignedUploadUrl(path);
@@ -90,7 +90,7 @@ export async function registerDeliverableFile(input: unknown): Promise<ActionRes
   return safeAction(async () => {
     const parsed = deliverableRegisterSchema.safeParse(input);
     if (!parsed.success) return invalid(parsed.error);
-    const ctx = await actionContext();
+    const ctx = await actionContext({ worker: true });
     await ownTask(ctx, parsed.data.task_id);
     if (!parsed.data.path.startsWith(`${parsed.data.task_id}/`))
       throw new ActionError("Chemin de fichier invalide.");
@@ -115,7 +115,7 @@ export async function registerDeliverableFile(input: unknown): Promise<ActionRes
 export async function deleteDeliverable(id: string): Promise<ActionResult> {
   return safeAction(async () => {
     if (!z.uuid().safeParse(id).success) throw new ActionError("Livrable introuvable.");
-    const ctx = await actionContext();
+    const ctx = await actionContext({ worker: true });
     const { data } = await ctx.db
       .from("pc_task_deliverables")
       .select("*")

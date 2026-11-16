@@ -4,6 +4,8 @@ import { leaveAdminMode, leaveSession } from "@/actions/access";
 import { AdminCodeDialog } from "@/components/access/AdminCodeDialog";
 import { Avatar } from "@/components/ui/Avatar";
 import type { MemberColor } from "@/lib/constants";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
+import type { Inbox } from "@/server/notifications";
 import { ThemeToggle } from "./ThemeToggle";
 
 export type ShellUser = {
@@ -12,13 +14,14 @@ export type ShellUser = {
   color: MemberColor;
   roleLabel: string;
   isAdmin: boolean;
+  isObserver: boolean;
 };
 
 const ghost =
   "text-on-forest/85 hover:bg-on-forest/10 hover:text-on-forest flex min-h-12 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium lg:min-h-10";
 
 /** Bas de la barre : qui je suis, « ce n'est pas moi », mode administrateur, thème, sortie. */
-export function UserCard({ user }: { user: ShellUser }) {
+export function UserCard({ user, inbox }: { user: ShellUser; inbox?: Inbox }) {
   return (
     <div className="border-on-forest/15 space-y-1 border-t pt-3">
       <div className="flex items-center gap-3 px-1 py-1">
@@ -27,6 +30,9 @@ export function UserCard({ user }: { user: ShellUser }) {
           <span className="text-on-forest block truncate text-sm font-semibold">{user.name}</span>
           <span className="text-on-forest/70 block truncate text-xs">{user.roleLabel}</span>
         </span>
+        {user.id && inbox && (
+          <NotificationBell tone="forest" items={inbox.items} unread={inbox.unread} />
+        )}
         <span className="text-on-forest [&_button]:text-on-forest [&_button:hover]:bg-on-forest/10">
           <ThemeToggle />
         </span>

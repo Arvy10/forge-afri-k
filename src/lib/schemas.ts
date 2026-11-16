@@ -5,7 +5,6 @@ import {
   PROJECT_STATUSES,
   TASK_PRIORITIES,
   TASK_STATUSES,
-  TASKS_POLICIES,
 } from "./constants";
 import { isISODate } from "./dates";
 
@@ -60,8 +59,6 @@ export const newCodeSchema = z
     path: ["confirm"],
   });
 
-export const settingsSchema = z.object({ tasks_add_policy: z.enum(TASKS_POLICIES) });
-
 /* ------------------------------ Membres ------------------------------ */
 
 export const memberSchema = z.object({
@@ -69,6 +66,8 @@ export const memberSchema = z.object({
   nom: z.string().trim().max(80, "Nom trop long.").default(""),
   couleur: z.enum(MEMBER_COLORS).default("vert"),
   role_ids: z.array(z.uuid()).default([]),
+  /** Observateur : consulte tout, sans travailler dans l'équipe. */
+  observateur: z.boolean().default(false),
 });
 export type MemberInput = z.input<typeof memberSchema>;
 
@@ -113,6 +112,18 @@ export const slotUpdateSchema = z
   })
   .strict();
 export type SlotUpdateInput = z.input<typeof slotUpdateSchema>;
+
+/* ------------------------------ Messages ------------------------------ */
+
+export const messageSchema = z.object({
+  to: z.uuid({ error: "Choisis la personne." }),
+  texte: z
+    .string({ error: "Écris ton message." })
+    .trim()
+    .min(1, "Écris ton message.")
+    .max(600, "600 caractères maximum."),
+});
+export type MessageInput = z.input<typeof messageSchema>;
 
 /* ------------------------------ Tâches ------------------------------ */
 

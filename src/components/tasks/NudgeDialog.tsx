@@ -115,8 +115,8 @@ export function NudgeDialog({
                 Enregistrer la relance
               </Button>
               <p className="text-ink-muted text-xs">
-                La relance apparaît dans l&apos;espace de {prenom}. Aucun message n&apos;est envoyé
-                automatiquement.
+                {prenom} la verra dans sa cloche de notifications, avec ton nom. Rien n&apos;est
+                envoyé automatiquement.
               </p>
             </form>
           ) : (

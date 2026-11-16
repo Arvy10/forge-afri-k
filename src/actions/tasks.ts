@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { ActionError, invalid, safeAction, type ActionResult } from "@/lib/action";
 import { failWith } from "@/lib/db-errors";
+import { canActOnTask, canAddTaskFor, canReassignTask } from "@/lib/permissions";
+import { relanceText } from "@/lib/notifications";
 import { isLate } from "@/lib/progress";
 import { todayISO } from "@/lib/dates";
 import { nudgeMessage } from "@/lib/nudge";
@@ -24,14 +26,14 @@ async function loadTask(
   return data as TaskRow;
 }
 
-/** Ajout d'une tâche : à n'importe qui, sauf si l'admin a réservé l'ajout (réglage). */
+/** Ajout d'une tâche : pour soi ; pour quelqu'un d'autre, seulement l'administrateur. */
 export async function createTask(input: unknown): Promise<ActionResult<{ id: string }>> {
   return safeAction<{ id: string }>(async () => {
     const parsed = taskSchema.safeParse(input);
     if (!parsed.success) return invalid(parsed.error);
-    const { db, auth, memberId, isAdmin } = await actionContext();
-    if (auth.settings?.tasks_add_policy === "admin" && !isAdmin)
-      throw new ActionError("L'administrateur a réservé l'ajout de tâches. Demande-lui.");
+    const { db, memberId, isAdmin, isObserver } = await actionContext();
+    const verdict = canAddTaskFor({ id: memberId, isAdmin, isObserver }, parsed.data.member_id);
+    if (!verdict.ok) throw new ActionError(verdict.reason);
     const { data, error } = await db
       .from("pc_tasks")
       .insert({
@@ -48,16 +50,19 @@ export async function createTask(input: unknown): Promise<ActionResult<{ id: str
   });
 }
 
-/** Modification : par la personne concernée, par celle qui l'a créée, ou par l'admin. Réassigner = admin. */
+/** Modification : sa propre tâche, ou l'administrateur. Réassigner = administrateur. */
 export async function updateTask(id: string, input: unknown): Promise<ActionResult> {
   return safeAction(async () => {
     const parsed = taskSchema.safeParse(input);
     if (!parsed.success) return invalid(parsed.error);
-    const { db, memberId, isAdmin } = await actionContext();
+    const { db, memberId, isAdmin, isObserver } = await actionContext();
     const task = await loadTask(db, id);
-    const mine = !!memberId && (task.member_id === memberId || task.cree_par === memberId);
-    if (!isAdmin && !mine) throw new ActionError("Tu ne peux modifier que tes propres tâches.");
-    if (!isAdmin && (parsed.data.member_id ?? null) !== task.member_id)
+    const verdict = canActOnTask({ id: memberId, isAdmin, isObserver }, task);
+    if (!verdict.ok) throw new ActionError(verdict.reason);
+    if (
+      !canReassignTask({ id: memberId, isAdmin, isObserver }) &&
+      (parsed.data.member_id ?? null) !== task.member_id
+    )
       throw new ActionError("Seul l'administrateur peut réassigner une tâche.");
     const { error } = await db
       .from("pc_tasks")
@@ -74,10 +79,10 @@ export async function setTaskStatus(input: unknown): Promise<ActionResult> {
   return safeAction(async () => {
     const parsed = taskStatusSchema.safeParse(input);
     if (!parsed.success) return invalid(parsed.error);
-    const { db, memberId, isAdmin } = await actionContext();
+    const { db, memberId, isAdmin, isObserver } = await actionContext();
     const task = await loadTask(db, parsed.data.id);
-    if (!isAdmin && (!memberId || task.member_id !== memberId))
-      throw new ActionError("Tu ne peux cocher que tes propres tâches.");
+    const verdict = canActOnTask({ id: memberId, isAdmin, isObserver }, task);
+    if (!verdict.ok) throw new ActionError(verdict.reason);
     const { error } = await db
       .from("pc_tasks")
       .update({ statut: parsed.data.statut, maj_par: memberId })
@@ -116,6 +121,18 @@ export async function nudgeTask(input: unknown): Promise<ActionResult<{ message:
       .insert({ task_id: task.id, par_member_id: memberId, note: parsed.data.note });
     if (error) failWith(error, "Impossible d'enregistrer la relance. Réessaie.");
 
+    const late = isLate(task, todayISO());
+    // La personne relancée le voit dans sa cloche, avec le nom de qui lui écrit.
+    if (task.member_id) {
+      await db.from("pc_notifications").insert({
+        member_id: task.member_id,
+        de_member_id: memberId,
+        kind: "relance",
+        task_id: task.id,
+        texte: relanceText({ titre: task.titre, late, note: parsed.data.note }),
+      });
+    }
+
     const { data: target } = task.member_id
       ? await db.from("pc_members").select("prenom").eq("id", task.member_id).maybeSingle()
       : { data: null };
@@ -123,7 +140,7 @@ export async function nudgeTask(input: unknown): Promise<ActionResult<{ message:
       prenom: target?.prenom ?? "toi",
       titre: task.titre,
       echeance: task.echeance,
-      late: isLate(task, todayISO()),
+      late,
       par: auth.member?.prenom ?? null,
       note: parsed.data.note || undefined,
     });

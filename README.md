@@ -21,7 +21,7 @@ Mode administrateur : second code ; « Rester administrateur sur cet appareil »
 - Si le code est bon, le serveur pose un **cookie signé** (`pc_session`, JWT HS256 via `jose`) : `httpOnly`, `secure` (en production), `sameSite=lax`, **30 jours**. Le mode administrateur est un second cookie (`pc_admin`) : **30 jours** si la case « Rester administrateur sur cet appareil » est cochée (par défaut), sinon **12 heures**. L'administrateur garde en plus sa propre fiche de membre (tâches, rôle) : choisir « qui il est » ne le fait jamais perdre le mode administrateur.
 - **Limite d'essais** : 5 codes faux → blocage de 5 minutes, **par adresse IP** (enregistrée seulement sous forme d'empreinte salée, table `pc_login_attempts`). Même règle pour le code administrateur.
 - **Changer le code** (Réglages) fait tomber toutes les autres sessions (numéro de version dans le cookie). Même effet avec « Déconnecter tous les appareils ».
-- **Les données ne passent que par le serveur.** Les 17 tables `pc_*` ont la RLS activée, **aucune politique**, et les droits sont retirés à `anon` et `authenticated` : la clé publique du navigateur ne peut rien lire ni écrire. Le serveur utilise la clé `service_role` (jamais exposée au navigateur). Toutes les entrées sont validées par Zod.
+- **Les données ne passent que par le serveur.** Les 18 tables `pc_*` ont la RLS activée, **aucune politique**, et les droits sont retirés à `anon` et `authenticated` : la clé publique du navigateur ne peut rien lire ni écrire. Le serveur utilise la clé `service_role` (jamais exposée au navigateur). Toutes les entrées sont validées par Zod.
 
 ### Limites de sécurité (à lire)
 
@@ -57,17 +57,18 @@ Générer un secret : `openssl rand -base64 48`.
 
 Les migrations sont dans `supabase/migrations/` (à rejouer dans l'ordre, sur un projet vierge) :
 
-| Fichier                                  | Contenu                                                                                                                                                                                                                   |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `20261111000001_pc_schema.sql`           | 14 tables `pc_*` (15 avec la migration suivante), types énumérés, index, triggers (`updated_at`, `fait_le`, journal d'activité), RLS sans politique, droits retirés à `anon`/`authenticated`, bucket privé `pc-livrables` |
-| `20261111000002_pc_seed.sql`             | Les 6 modèles de rôles, le guide, les projets, la frise. **Aucun membre, tâche ni post.**                                                                                                                                 |
-| `20261116000001_pc_role_tasks.sql`       | Table `pc_role_tasks` (tâches habituelles de chaque rôle, RLS sans politique) et ses 95 tâches types, formulées de façon générale (ni heures ni noms) ; rejouable.                                                        |
-| `20261116000002_pc_calendrier_jours.sql` | `pc_days` et `pc_slots` (jours et créneaux) à la place de `pc_posts` ; les tâches et le journal pointent vers un créneau (`slot_id`).                                                                                     |
-| `20261116000003_pc_calendrier_seed.sql`  | Les 20 jours et 40 créneaux du calendrier + la section « Règles du calendrier » du guide (générée depuis le JSON, idempotente).                                                                                           |
-| `20261115000001_pc_roles_domaines.sql`   | Les 8 domaines du pôle (Photos et vidéos, Montage vidéo, Création d'affiches, Rédaction, Réseaux sociaux, Calendrier éditorial, Relations médias, Suivi des publications) avec 24 sous-rôles ; rejouable sans doublon.    |
-| `20261112000001_pc_roles_infos.sql`      | Sous-rôles (`pc_roles.parent_id`) et table `pc_infos` (annonces de l'administrateur), mêmes protections (RLS sans politique).                                                                                             |
+| Fichier                                           | Contenu                                                                                                                                                                                                                   |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `20261111000001_pc_schema.sql`                    | 14 tables `pc_*` (15 avec la migration suivante), types énumérés, index, triggers (`updated_at`, `fait_le`, journal d'activité), RLS sans politique, droits retirés à `anon`/`authenticated`, bucket privé `pc-livrables` |
+| `20261111000002_pc_seed.sql`                      | Les 6 modèles de rôles, le guide, les projets, la frise. **Aucun membre, tâche ni post.**                                                                                                                                 |
+| `20261116000001_pc_role_tasks.sql`                | Table `pc_role_tasks` (tâches habituelles de chaque rôle, RLS sans politique) et ses 95 tâches types, formulées de façon générale (ni heures ni noms) ; rejouable.                                                        |
+| `20261117000001_pc_observateur_notifications.sql` | Colonne `pc_members.observateur` (consulte tout, ne travaille pas dans l'équipe) et table `pc_notifications` (rappels et messages de la cloche), mêmes protections (RLS sans politique).                                  |
+| `20261116000002_pc_calendrier_jours.sql`          | `pc_days` et `pc_slots` (jours et créneaux) à la place de `pc_posts` ; les tâches et le journal pointent vers un créneau (`slot_id`).                                                                                     |
+| `20261116000003_pc_calendrier_seed.sql`           | Les 20 jours et 40 créneaux du calendrier + la section « Règles du calendrier » du guide (générée depuis le JSON, idempotente).                                                                                           |
+| `20261115000001_pc_roles_domaines.sql`            | Les 8 domaines du pôle (Photos et vidéos, Montage vidéo, Création d'affiches, Rédaction, Réseaux sociaux, Calendrier éditorial, Relations médias, Suivi des publications) avec 24 sous-rôles ; rejouable sans doublon.    |
+| `20261112000001_pc_roles_infos.sql`               | Sous-rôles (`pc_roles.parent_id`) et table `pc_infos` (annonces de l'administrateur), mêmes protections (RLS sans politique).                                                                                             |
 
-Tables : `pc_members`, `pc_roles`, `pc_member_roles`, `pc_tasks`, `pc_task_deliverables`, `pc_nudges`, `pc_days`, `pc_slots`, `pc_activity`, `pc_guide_sections`, `pc_projects`, `pc_milestones`, `pc_settings`, `pc_infos`, `pc_role_tasks`, plus `pc_login_attempts` (limite d'essais) et `pc_feature_interests` (bouton « Me prévenir » des pages Bientôt).
+Tables : `pc_members`, `pc_roles`, `pc_member_roles`, `pc_tasks`, `pc_task_deliverables`, `pc_nudges`, `pc_days`, `pc_slots`, `pc_activity`, `pc_guide_sections`, `pc_projects`, `pc_milestones`, `pc_settings`, `pc_infos`, `pc_role_tasks`, `pc_notifications`, plus `pc_login_attempts` (limite d'essais) et `pc_feature_interests` (bouton « Me prévenir » des pages Bientôt).
 
 **Appliquer** : Supabase → _SQL Editor_ → coller chaque fichier, dans l'ordre. (Le projet utilisé par ce dépôt est « forge afri'k » ; les migrations n'ont créé que des tables `pc_*` et ne touchent à rien d'autre.)
 
@@ -97,7 +98,7 @@ Chaque ligne doit afficher `HTTP 401/403` (ou une liste vide), jamais de donnée
 2. **Coche** ses tâches d'un geste ; **dépose un livrable** (fichier depuis le téléphone, ou lien Drive/WeTransfer pour les vidéos lourdes — 50 Mo maximum par fichier).
 3. Dans **Équipe**, il voit l'avancement de chacun et peut **relancer** : la relance apparaît dans l'espace de la personne, et un **message prêt à copier** est proposé pour WhatsApp (aucun envoi automatique).
 
-**Règles par défaut** (réglables dans _Réglages_) : tout le monde voit tout ; chacun coche ses propres tâches et dépose ses livrables ; **tout membre peut ajouter une tâche à n'importe qui** (l'admin peut le réserver à lui seul) ; seuls l'admin supprime, réassigne et change les rôles.
+**Qui peut faire quoi** (règles fixes, `src/lib/permissions.ts`, appliquées côté serveur et dans les écrans) : **tout le monde voit tout** (calendrier, tâches, avancement de chacun) ; **chaque membre n'agit que sur sa propre activité** (il ajoute ses tâches, les coche, dépose ses livrables, prend un créneau libre) ; **l'administrateur est le seul** à donner des tâches aux autres, ajouter ou retirer des membres, gérer les rôles ; un **observateur** (case à cocher sur sa fiche, pour une personne qui supervise sans travailler dans l'équipe) consulte tout, n'a ni tâche ni rôle, ne modifie rien, mais peut laisser un **rappel** ou un **message**.
 
 **Calendrier** : **20 jours chargés au premier lancement** (du lundi 16 novembre au vendredi 11 décembre 2026), deux créneaux par jour : le **post obligatoire** (sur TikTok, Instagram et Facebook, avec un format par réseau) et un **petit post facultatif**. Tout est déjà rédigé (titre, idée, étapes « Comment faire », accroche, légende prête, formats, date de préparation) ; l'équipe ne remplit que le **responsable**, le **statut** et le **lien du post**. Règles : lundi Impact … vendredi Appel à l'action ; l'obligatoire est le matin (8h00) lundi, mercredi, vendredi et le soir (19h00) mardi et jeudi ; préparation 2 jours avant (le dimanche pour le lundi), la veille pour le petit post. La source des textes est `data/calendrier-16nov-11dec.json` ; `node scripts/build-calendar-seed.mjs` en regénère la migration de chargement (`…_pc_calendrier_seed.sql`), **idempotente** : rejouée, elle ne crée aucun doublon et n'écrase ni responsable, ni statut, ni lien.
 
@@ -120,7 +121,8 @@ createdb pc_dev && psql pc_dev -f tests/rls/supabase_stub.sql \
   -f supabase/migrations/20261115000001_pc_roles_domaines.sql \
   -f supabase/migrations/20261116000001_pc_role_tasks.sql \
   -f supabase/migrations/20261116000002_pc_calendrier_jours.sql \
-  -f supabase/migrations/20261116000003_pc_calendrier_seed.sql
+  -f supabase/migrations/20261116000003_pc_calendrier_seed.sql \
+  -f supabase/migrations/20261117000001_pc_observateur_notifications.sql
 DATABASE_URL=postgres://localhost/pc_dev npm run dev:local-backend
 ```
 
@@ -159,6 +161,7 @@ Le script de build utilise `next build --webpack` : le compilateur par défaut (
 - **Règles et guide**, **Projets Forge Afri'K** (modifiables en mode administrateur), pages **Bientôt** (Bibliothèque, Réunions, Résultats).
 - **Rôles** (page Équipe → Rôles) : qui fait quoi, avec **sous-rôles** ; plusieurs personnes peuvent porter le même rôle ; les rôles sans titulaire sont signalés. **Chacun choisit ses rôles** dans Mon espace (« Choisir mes rôles »). La mission de chaque rôle s'affiche dans **Mon espace**, y compris pour l'administrateur.
 - **Tâches habituelles par rôle** : chaque rôle a une liste de tâches types (dans Mon espace, sur la fiche d'un membre et sur la page Rôles). Un clic les ajoute aux tâches de la personne (« Ajouter » ou « Tout ajouter », sans doublon) ; l'administrateur peut les attribuer à n'importe quel membre et les modifier dans Administration → Rôles.
+- **Cloche de notifications** : un rappel (bouton « Relancer » sur une tâche) ou un message (bouton « Envoyer un message » sur la fiche de quelqu'un) arrive dans la cloche de la personne, avec le nom de l'expéditeur. À sa connexion, une bannière rouge dit « Tu as 2 messages non lus » puis se referme ; il reste la cloche avec son point rouge. Lire le panneau marque les messages comme lus.
 - **Infos** : annonces publiées par l'administrateur (épinglées, avec date de mise à jour) ; les dernières apparaissent aussi sur l'Accueil.
 - **Administration** (page Réglages, admin) : qui peut ajouter des tâches, code d'accès, **créer / modifier / supprimer les rôles** et leurs sous-rôles, **supprimer un membre** (avec ou sans ses tâches ; on ne peut pas supprimer sa propre fiche), export CSV des tâches.
 
