@@ -16,38 +16,23 @@ export function HeroBanner({
   children?: React.ReactNode;
 }) {
   return (
-    <header className="bg-forest text-on-forest relative mb-7 overflow-hidden rounded-3xl px-5 py-7 shadow-[var(--shadow-lift)] md:px-9 md:py-10">
-      {/* lueur + trame */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{
-          backgroundImage:
-            "radial-gradient(60rem 22rem at 100% 0%, rgb(232 98 10 / 0.28), transparent 60%), radial-gradient(rgb(246 241 228 / 0.07) 1.2px, transparent 1.2px)",
-          backgroundSize: "auto, 22px 22px",
-        }}
-      />
+    <header className="bg-forest text-on-forest relative mb-6 overflow-hidden rounded-2xl px-5 py-6 md:px-8 md:py-8">
       <Gear
         spin
-        className="text-on-forest pointer-events-none absolute -top-20 -right-14 size-60 opacity-[0.1] md:-right-4 md:size-[22rem]"
+        className="text-on-forest pointer-events-none absolute -top-16 -right-12 size-52 opacity-[0.06] md:size-80"
       />
-      <Gear className="text-accent animate-gear-reverse pointer-events-none absolute -right-2 -bottom-16 size-36 opacity-30 max-md:hidden md:right-72 md:size-44" />
-      <Gear className="text-on-forest animate-float pointer-events-none absolute right-1/3 -bottom-6 size-14 opacity-10 max-md:hidden" />
-
       <div className="relative">
-        <p className="text-on-forest/75 text-sm font-medium first-letter:uppercase">{dateLabel}</p>
-        <p className="text-on-forest/90 mt-1 text-base font-medium">
-          {greeting}, <span className="text-accent font-semibold">{firstName}</span>
-        </p>
-        <h1 className="font-display mt-2 max-w-4xl text-3xl leading-[1.05] font-bold md:text-5xl">
-          Pôle Communication <span className="text-accent">&amp;</span> Réseau
+        <p className="text-on-forest/70 text-base first-letter:uppercase">{dateLabel}</p>
+        <h1 className="font-display mt-1 text-2xl leading-tight font-bold md:text-3xl">
+          {greeting}, {firstName}
         </h1>
-        <span aria-hidden className="title-bar bg-accent mt-4 block h-1 w-16 rounded-full" />
-        <p className="text-on-forest/85 mt-4 max-w-xl text-sm md:text-base">
-          Penser local, construire durable,{" "}
-          <span className="text-accent font-semibold">impacter l&apos;Afrique</span>.
+        <p className="text-on-forest/80 mt-1 max-w-2xl text-base">
+          Pôle Communication &amp; Réseau · Penser local, construire durable, impacter
+          l&apos;Afrique.
         </p>
-        {children && <div className="mt-6 flex flex-wrap gap-2.5">{children}</div>}
+        {children && (
+          <div className="mt-5 grid grid-cols-2 gap-2.5 md:flex md:flex-wrap">{children}</div>
+        )}
       </div>
     </header>
   );
@@ -68,14 +53,14 @@ export function HeroStat({
   return (
     <a
       href={href}
-      className="group border-on-forest/15 bg-on-forest/10 hover:bg-on-forest/20 flex min-h-11 items-center gap-3 rounded-2xl border px-4 py-2.5 backdrop-blur-sm transition-colors"
+      className="group border-on-forest/15 bg-on-forest/[0.07] hover:bg-on-forest/15 flex min-h-12 items-center gap-3 rounded-xl border px-4 py-2.5 transition-colors"
     >
       <span
-        className={`font-display text-3xl leading-none font-bold tabular-nums ${urgent && value > 0 ? "text-accent" : ""}`}
+        className={`font-display text-2xl leading-none font-bold tabular-nums ${urgent && value > 0 ? "text-accent" : ""}`}
       >
         {value}
       </span>
-      <span className="text-on-forest/85 text-sm leading-tight">{label}</span>
+      <span className="text-on-forest/85 text-sm leading-snug">{label}</span>
     </a>
   );
 }

@@ -12,6 +12,7 @@ import { todayISO } from "@/lib/dates";
 import { weekProgress } from "@/lib/progress";
 import { requireSession } from "@/server/session";
 import { loadTaskPage } from "@/server/task-page";
+import { summarizeRoles } from "@/lib/roles";
 import { getRoles, getRoleTasks, getTeam } from "@/server/team";
 
 export const metadata: Metadata = { title: "Espace d'un membre" };
@@ -51,7 +52,7 @@ export default async function MemberSpacePage({ params }: { params: Promise<{ id
             {member.name}
           </h1>
           <p className="text-ink-muted mt-0.5 text-sm md:text-base">
-            {member.roleNames.join(" · ") || "Rôle à définir"}
+            {summarizeRoles(member.roleNames)}
           </p>
           {!member.actif && (
             <span className="bg-surface-2 text-ink-muted mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold">

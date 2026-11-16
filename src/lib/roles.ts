@@ -48,3 +48,10 @@ export function canBeParent(
     return { ok: false, reason: "Ce rôle a des sous-rôles : il ne peut pas devenir un sous-rôle." };
   return { ok: true };
 }
+
+/** « Rédaction › Copywriter · Vidéo +4 » : un résumé court des rôles d'une personne (au plus `max` noms). */
+export function summarizeRoles(names: string[] | undefined, max = 2): string {
+  if (!names || names.length === 0) return "Rôle à définir";
+  const shown = names.slice(0, max).join(" · ");
+  return names.length > max ? `${shown} +${names.length - max}` : shown;
+}

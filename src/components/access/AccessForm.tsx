@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
-import { Eye, EyeOff, KeyRound } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, KeyRound } from "lucide-react";
 import { submitAccessCode } from "@/actions/access";
 import { Button } from "@/components/ui/Button";
 import { FormError } from "@/components/ui/Field";
@@ -27,6 +28,13 @@ export function AccessForm({ suite }: { suite?: string }) {
         });
       }}
     >
+      <Link
+        href="/bienvenue"
+        className="text-ink-muted hover:text-ink -ml-1 inline-flex min-h-12 items-center gap-1.5 rounded-lg px-1 text-base font-medium"
+      >
+        <ArrowLeft aria-hidden className="size-4" />
+        Retour à l&apos;accueil
+      </Link>
       <div>
         <h1 className="font-display text-2xl font-bold">Bienvenue dans l&apos;atelier</h1>
         <p className="text-ink-muted mt-1 text-sm">

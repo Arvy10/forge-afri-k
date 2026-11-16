@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canBeParent, flattenRoles, roleLabel, roleTree } from "@/lib/roles";
+import { canBeParent, flattenRoles, roleLabel, roleTree, summarizeRoles } from "@/lib/roles";
 import type { RoleRow } from "@/lib/database.types";
 
 const r = (id: string, nom: string, parent_id: string | null = null, ordre = 0): RoleRow => ({
@@ -48,5 +48,17 @@ describe("rôles et sous-rôles", () => {
     expect(canBeParent("c", "m", ROLES).ok).toBe(false); // le parent est déjà un sous-rôle
     expect(canBeParent("v", "c", ROLES).ok).toBe(false); // « Vidéo » a des sous-rôles
     expect(canBeParent(null, "v", ROLES)).toEqual({ ok: true }); // création
+  });
+});
+
+describe("résumé des rôles d'une personne", () => {
+  it("aucun rôle", () => {
+    expect(summarizeRoles([])).toBe("Rôle à définir");
+    expect(summarizeRoles(undefined)).toBe("Rôle à définir");
+  });
+  it("jusqu'à deux noms, puis « +N »", () => {
+    expect(summarizeRoles(["Rédaction"])).toBe("Rédaction");
+    expect(summarizeRoles(["Rédaction", "Vidéo"])).toBe("Rédaction · Vidéo");
+    expect(summarizeRoles(["A", "B", "C", "D"])).toBe("A · B +2");
   });
 });

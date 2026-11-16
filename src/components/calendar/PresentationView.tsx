@@ -1,78 +1,105 @@
-import { Target } from "lucide-react";
 import { TypePill } from "@/components/ui/TypePill";
 import { CHANNEL_LABEL } from "@/lib/constants";
-import { formatDayLong } from "@/lib/dates";
+import { formatDateShort, formatDayShort } from "@/lib/dates";
 import type { PresentationPost, PresentationWeek } from "@/lib/presentation";
 
-function Post({ post }: { post: PresentationPost }) {
+/** Largeurs des colonnes sur grand écran : Date | Post | Canal et format | Légende. */
+const ROW =
+  "xl:grid xl:grid-cols-[8.5rem_minmax(0,1.1fr)_minmax(0,1.2fr)_minmax(0,1.5fr)] xl:gap-x-6";
+
+const label = "text-ink-muted text-sm font-semibold tracking-wide uppercase xl:hidden";
+
+function Row({ post }: { post: PresentationPost }) {
   return (
-    <article className="bg-surface border-line shadow-card rounded-2xl border p-4 md:p-5">
-      <header className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <h4 className="font-display text-lg font-bold first-letter:uppercase">
-          {formatDayLong(post.date)}
-        </h4>
-        <TypePill type={post.type} className="text-sm" />
-      </header>
+    <li className={`border-line py-5 first:pt-0 last:pb-0 md:py-6 ${ROW} border-b last:border-b-0`}>
+      {/* Date et type */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 xl:flex-col xl:items-start">
+        <p className="text-base font-semibold whitespace-nowrap first-letter:uppercase">
+          {formatDayShort(post.date)} {formatDateShort(post.date)}
+        </p>
+        <TypePill type={post.type} compact className="text-sm" />
+      </div>
 
-      <p className="mt-2 text-lg leading-snug font-semibold">{post.titreCourt}</p>
+      {/* Titre court */}
+      <p className="mt-2 text-lg leading-snug font-semibold xl:mt-0">{post.titreCourt}</p>
 
-      <dl className="mt-3 grid gap-3 sm:grid-cols-[8rem_1fr]">
-        <dt className="text-ink-muted text-base font-semibold">Canal</dt>
-        <dd className="text-base">
-          {post.formats.length > 0
-            ? post.formats.map((f) => CHANNEL_LABEL[f.canal]).join(" · ")
-            : "—"}
-        </dd>
+      {/* Canal et format */}
+      <div className="mt-4 xl:mt-0">
+        <p className={label}>Canal et format</p>
+        {post.formats.length > 0 ? (
+          <ul className="mt-1.5 space-y-1.5 xl:mt-0">
+            {post.formats.map((f) => (
+              <li key={f.canal} className="text-base leading-snug">
+                <span className="font-semibold">{CHANNEL_LABEL[f.canal]}</span>
+                <span className="text-ink-muted"> · </span>
+                {f.format}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-ink-muted mt-1.5 text-base xl:mt-0">—</p>
+        )}
+      </div>
 
-        <dt className="text-ink-muted text-base font-semibold">Format</dt>
-        <dd>
-          {post.formats.length > 0 ? (
-            <ul className="space-y-1.5 text-base">
-              {post.formats.map((f) => (
-                <li key={f.canal}>
-                  <span className="font-semibold">{CHANNEL_LABEL[f.canal]}</span> : {f.format}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            "—"
-          )}
-        </dd>
-
-        <dt className="text-ink-muted text-base font-semibold">Légende</dt>
-        <dd className="text-base leading-relaxed whitespace-pre-wrap">{post.legende ?? "—"}</dd>
-      </dl>
-    </article>
+      {/* Légende */}
+      <div className="mt-4 xl:mt-0">
+        <p className={label}>Légende</p>
+        {post.legende ? (
+          <p className="mt-1.5 text-base leading-relaxed whitespace-pre-wrap xl:mt-0">
+            {post.legende}
+          </p>
+        ) : (
+          <p className="text-ink-muted mt-1.5 text-base xl:mt-0">—</p>
+        )}
+      </div>
+    </li>
   );
 }
 
 /** Calendrier en lecture seule, semaine par semaine, avec la ligne d'objectif de chaque semaine. */
 export function PresentationView({ weeks }: { weeks: PresentationWeek[] }) {
   return (
-    <div className="mx-auto max-w-4xl space-y-10">
+    <div className="space-y-8">
       {weeks.map((w) => (
-        <section key={w.semaine} aria-labelledby={`presentation-s${w.semaine}`}>
-          <header className="mb-4">
-            <h2 id={`presentation-s${w.semaine}`} className="font-display text-2xl font-bold">
-              Semaine {w.semaine} <span className="text-ink-muted font-medium">·</span>{" "}
-              <span className="text-accent-strong">{w.theme}</span>
+        <section
+          key={w.semaine}
+          aria-labelledby={`presentation-s${w.semaine}`}
+          className="bg-surface border-line shadow-card overflow-hidden rounded-2xl border"
+        >
+          <header className="border-line bg-surface-2/50 border-b px-5 py-4 md:px-6">
+            <p className="text-ink-muted text-sm font-semibold tracking-wide uppercase">
+              Semaine {w.semaine}
+            </p>
+            <h2
+              id={`presentation-s${w.semaine}`}
+              className="font-display text-xl font-bold md:text-2xl"
+            >
+              {w.theme}
             </h2>
             {w.objectif && (
-              <p className="bg-accent-soft text-ink mt-2 flex items-start gap-2.5 rounded-xl px-4 py-3 text-lg font-medium">
-                <Target aria-hidden className="text-accent-strong mt-1 size-5 shrink-0" />
-                <span>
-                  <span className="font-bold">Objectif :</span> {w.objectif}
-                </span>
+              <p className="border-accent mt-3 border-l-4 pl-3 text-lg leading-snug">
+                <span className="font-semibold">Objectif :</span> {w.objectif}
               </p>
             )}
           </header>
-          <ul className="grid grid-cols-1 gap-4">
-            {w.posts.map((p) => (
-              <li key={p.id} className="min-w-0">
-                <Post post={p} />
-              </li>
-            ))}
-          </ul>
+
+          <div className="px-5 py-5 md:px-6">
+            {/* En-têtes de colonnes (grand écran seulement) */}
+            <div
+              aria-hidden
+              className={`text-ink-muted border-line mb-4 hidden border-b pb-2 text-sm font-semibold tracking-wide uppercase ${ROW}`}
+            >
+              <span>Date</span>
+              <span>Post</span>
+              <span>Canal et format</span>
+              <span>Légende</span>
+            </div>
+            <ul>
+              {w.posts.map((p) => (
+                <Row key={p.id} post={p} />
+              ))}
+            </ul>
+          </div>
         </section>
       ))}
     </div>

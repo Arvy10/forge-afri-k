@@ -4,6 +4,9 @@ import { SESSION_COOKIE, verifySessionToken } from "./server/jwt";
 /** Pages accessibles sans code : la présentation et l'écran du code d'accès. Tout le reste est privé. */
 const PUBLIC_PATHS = ["/acces", "/bienvenue"];
 
+/** En-tête interne : l'adresse demandée (posé ici, jamais fourni par le navigateur). */
+const PATH_HEADER = "x-pc-path";
+
 /**
  * Premier filtre : un jeton signé valide est exigé. (La version du code d'accès, stockée en base,
  * est vérifiée ensuite côté serveur par `getAuth()`.)
@@ -29,7 +32,10 @@ export async function proxy(request: NextRequest) {
     to.search = pathname === "/" ? "" : `?suite=${encodeURIComponent(pathname + search)}`;
     return NextResponse.redirect(to);
   }
-  return NextResponse.next();
+  // Les pages savent ainsi quelle adresse a été demandée (pour renvoyer « / » vers la présentation).
+  const headers = new Headers(request.headers);
+  headers.set(PATH_HEADER, pathname);
+  return NextResponse.next({ request: { headers } });
 }
 
 export const config = {

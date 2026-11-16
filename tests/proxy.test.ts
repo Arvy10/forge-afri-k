@@ -48,6 +48,15 @@ describe("accès aux pages et aux données : cookie signé obligatoire", () => {
     expect(res.headers.get("location")).toBeNull();
   });
 
+  it("l'adresse demandée est transmise aux pages (en-tête interne, jamais celui du navigateur)", async () => {
+    const token = await signSessionToken({ v: 1 }, SECRET);
+    const forged = new NextRequest("https://pole.exemple.org/equipe", {
+      headers: { cookie: `pc_session=${token}`, "x-pc-path": "/" },
+    });
+    const res = await proxy(forged);
+    expect(res.headers.get("x-middleware-request-x-pc-path")).toBe("/equipe");
+  });
+
   it("garde la page demandée pour y revenir après la saisie du code", async () => {
     const res = await proxy(req("/calendrier?vue=mois"));
     expect(

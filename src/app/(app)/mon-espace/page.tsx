@@ -11,6 +11,7 @@ import { todayISO } from "@/lib/dates";
 import { weekProgress } from "@/lib/progress";
 import { requireSession } from "@/server/session";
 import { loadTaskPage } from "@/server/task-page";
+import { summarizeRoles } from "@/lib/roles";
 import { getRoles, getRoleTasks, getTeam } from "@/server/team";
 
 export const metadata: Metadata = { title: "Mon espace" };
@@ -62,7 +63,7 @@ export default async function MySpacePage() {
             Bonjour {member.prenom}
           </h1>
           <p className="text-ink-muted mt-0.5 text-sm md:text-base">
-            {me?.roleNames.join(" · ") || "Rôle à définir"}
+            {summarizeRoles(me?.roleNames)}
           </p>
         </div>
       </header>
