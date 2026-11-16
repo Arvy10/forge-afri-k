@@ -39,7 +39,7 @@ export default async function AccessPage({
 
   // Déjà entré : inutile de redemander le code.
   const auth = await getAuth();
-  if (auth.valid) redirect(auth.member ? safeNext(suite, "/") : "/qui-es-tu");
+  if (auth.valid) redirect(auth.member ? safeNext(suite, "/accueil") : "/qui-es-tu");
 
-  return <AccessForm suite={suite ? safeNext(suite, "/") : undefined} />;
+  return <AccessForm suite={suite ? safeNext(suite, "/accueil") : undefined} />;
 }

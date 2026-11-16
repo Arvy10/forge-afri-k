@@ -69,7 +69,10 @@ export async function submitAccessCode(input: unknown): Promise<ActionResult> {
       memberId = data?.id ?? null;
     }
     await startSession(memberId);
-    return { ok: true, data: { next: memberId ? safeNext(parsed.data.suite, "/") : "/qui-es-tu" } };
+    return {
+      ok: true,
+      data: { next: memberId ? safeNext(parsed.data.suite, "/accueil") : "/qui-es-tu" },
+    };
   });
   if (!result.ok) return result;
   redirect(result.data!.next);
@@ -92,7 +95,7 @@ export async function chooseMember(memberId: string): Promise<ActionResult> {
   });
   if (!result.ok) return result;
   // Un observateur n'a pas d'espace de travail : il arrive sur l'accueil.
-  redirect(result.data?.observer ? "/" : "/mon-espace");
+  redirect(result.data?.observer ? "/accueil" : "/mon-espace");
 }
 
 export async function leaveSession(): Promise<void> {
@@ -127,5 +130,5 @@ export async function enterAdminMode(input: unknown): Promise<ActionResult> {
 
 export async function leaveAdminMode(): Promise<void> {
   await endAdmin();
-  redirect("/");
+  redirect("/accueil");
 }

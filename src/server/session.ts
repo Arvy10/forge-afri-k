@@ -1,6 +1,6 @@
 import "server-only";
 import { cache } from "react";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { ActionError } from "@/lib/action";
 import type { MemberRow, SettingsRow } from "@/lib/database.types";
@@ -90,12 +90,7 @@ export const getAuth = cache(async (): Promise<Auth> => {
 /** Pour les pages : sans session valable, retour à l'écran du code. */
 export async function requireSession(): Promise<Auth> {
   const auth = await getAuth();
-  if (!auth.valid) {
-    // Le lien « normal » du site (« / ») mène toujours à la présentation, même avec un ancien cookie
-    // (code changé, session expirée) ; les autres adresses demandent le code d'accès.
-    const path = (await headers()).get("x-pc-path");
-    redirect(path === "/" ? "/bienvenue" : "/acces");
-  }
+  if (!auth.valid) redirect("/acces");
   return auth;
 }
 

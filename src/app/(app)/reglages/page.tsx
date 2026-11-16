@@ -17,7 +17,7 @@ export default async function SettingsPage({
 }) {
   const { "ajout-role": ajoutRole } = await searchParams;
   const auth = await requireSession();
-  if (!auth.isAdmin) redirect("/");
+  if (!auth.isAdmin) redirect("/accueil");
   const [roles, team, roleTasks] = await Promise.all([getRoles(), getTeam(), getRoleTasks()]);
 
   // Combien de personnes portent chaque rôle (membres actifs).

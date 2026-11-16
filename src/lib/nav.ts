@@ -29,7 +29,7 @@ export type NavItem = {
 };
 
 export const NAV_ITEMS: NavItem[] = [
-  { href: "/", label: "Accueil", icon: House, primary: true },
+  { href: "/accueil", label: "Accueil", icon: House, primary: true },
   {
     href: "/mon-espace",
     label: "Mon espace",
@@ -54,5 +54,5 @@ export function navFor(isAdmin: boolean, isObserver = false): NavItem[] {
 }
 
 export function isActivePath(pathname: string, href: string) {
-  return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+  return pathname === href || pathname.startsWith(`${href}/`);
 }

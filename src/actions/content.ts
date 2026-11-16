@@ -29,7 +29,7 @@ export async function saveProject(input: unknown): Promise<ActionResult> {
     const { error } = await db.from("pc_projects").update(fields).eq("id", id);
     if (error) throw new ActionError("Impossible d'enregistrer ce projet.");
     revalidatePath("/projets");
-    revalidatePath("/");
+    revalidatePath("/accueil");
     return { ok: true };
   });
 }

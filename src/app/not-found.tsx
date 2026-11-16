@@ -10,7 +10,7 @@ export default function NotFound() {
       <p className="text-ink-muted max-w-sm text-sm">
         Le lien est peut-être ancien, ou la personne ou le post a été supprimé.
       </p>
-      <Link href="/" className={buttonClass("primary")}>
+      <Link href="/accueil" className={buttonClass("primary")}>
         Retour à l&apos;accueil
       </Link>
     </main>

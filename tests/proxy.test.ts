@@ -14,6 +14,7 @@ beforeAll(() => {
 
 describe("accès aux pages et aux données : cookie signé obligatoire", () => {
   const PRIVATE = [
+    "/accueil",
     "/calendrier",
     "/equipe",
     "/mon-espace",
@@ -41,20 +42,15 @@ describe("accès aux pages et aux données : cookie signé obligatoire", () => {
     expect((await proxy(req("/equipe"))).headers.get("location")).not.toBeNull();
   });
 
-  it("avec un cookie valide, « / » reste l'accueil de l'espace", async () => {
+  it("« / » montre la présentation aussi pour une personne connectée ; l'intérieur est à /accueil", async () => {
     const token = await signSessionToken({ v: 1 }, SECRET);
-    const res = await proxy(req("/", `pc_session=${token}`));
-    expect(res.headers.get("x-middleware-rewrite")).toBeNull();
-    expect(res.headers.get("location")).toBeNull();
-  });
-
-  it("l'adresse demandée est transmise aux pages (en-tête interne, jamais celui du navigateur)", async () => {
-    const token = await signSessionToken({ v: 1 }, SECRET);
-    const forged = new NextRequest("https://pole.exemple.org/equipe", {
-      headers: { cookie: `pc_session=${token}`, "x-pc-path": "/" },
-    });
-    const res = await proxy(forged);
-    expect(res.headers.get("x-middleware-request-x-pc-path")).toBe("/equipe");
+    const root = await proxy(req("/", `pc_session=${token}`));
+    expect(new URL(root.headers.get("x-middleware-rewrite")!).pathname).toBe("/bienvenue");
+    const home = await proxy(req("/accueil", `pc_session=${token}`));
+    expect(home.headers.get("x-middleware-rewrite")).toBeNull();
+    expect(home.headers.get("location")).toBeNull();
+    const anon = await proxy(req("/accueil"));
+    expect(new URL(anon.headers.get("location")!).pathname).toBe("/acces");
   });
 
   it("garde la page demandée pour y revenir après la saisie du code", async () => {

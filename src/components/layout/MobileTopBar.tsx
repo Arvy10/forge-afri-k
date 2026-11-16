@@ -10,7 +10,7 @@ export function MobileTopBar({ user, inbox }: { user: ShellUser; inbox: Inbox })
   return (
     <div className="border-line bg-canvas/90 sticky top-0 z-20 flex items-center justify-between gap-3 border-b px-4 py-2 backdrop-blur-md lg:hidden">
       <Link
-        href="/"
+        href="/accueil"
         aria-label="Forge Afri'K — accueil"
         className="flex min-h-12 items-center gap-2.5"
       >
@@ -22,7 +22,7 @@ export function MobileTopBar({ user, inbox }: { user: ShellUser; inbox: Inbox })
       <div className="flex items-center gap-1">
         {user.id && <NotificationBell items={inbox.items} unread={inbox.unread} />}
         <Link
-          href={user.id && !user.isObserver ? "/mon-espace" : user.id ? "/" : "/qui-es-tu"}
+          href={user.id && !user.isObserver ? "/mon-espace" : user.id ? "/accueil" : "/qui-es-tu"}
           className="bg-surface border-line flex min-h-12 items-center gap-2 rounded-full border py-1 pr-3.5 pl-1"
           aria-label={user.id ? `Mon espace (${user.name})` : "Choisir qui je suis"}
         >

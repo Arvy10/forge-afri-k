@@ -21,7 +21,7 @@ export const metadata: Metadata = { title: "Mon espace" };
 export default async function MySpacePage() {
   const auth = await requireSession();
   // Un observateur n'a pas d'espace de travail : il consulte l'accueil, le calendrier et l'équipe.
-  if (auth.isObserver && !auth.isAdmin) redirect("/");
+  if (auth.isObserver && !auth.isAdmin) redirect("/accueil");
   const member = auth.member;
   const actor = { id: auth.memberId, isAdmin: auth.isAdmin, isObserver: auth.isObserver };
 
